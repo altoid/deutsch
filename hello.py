@@ -1,7 +1,7 @@
 from flask import Flask, session, request, url_for, escape, redirect, render_template
 
 app = Flask(__name__)
-app.secret_key = 'no one will ever guess this'
+app.config.from_pyfile('config.py')
 
 @app.route('/')
 def index():
@@ -13,7 +13,7 @@ def index():
         return redirect(url_for('login'))
 
     return render_template('ack.html', 
-                           username=escape(session['username']),
+                           username=username,
                            logout_url=url_for('logout'))
 
 @app.route('/logout', methods=['POST'])
