@@ -2,13 +2,13 @@
 create table attribute
 (
 	id	      int		auto_increment not null primary key,
-	name	      varchar(255)	not null
+	name	      varchar(255)	not null unique
 ) engine = innodb;
 
 create table pos -- part of speech
 (
 	id	      int		auto_increment not null primary key,
-	name	      varchar(255)	not null
+	name	      varchar(255)	not null unique
 ) engine = innodb;
 
 -- all the attributes defined for a part of speech (verb conjugations, etc)
@@ -29,12 +29,6 @@ create table word
 	word		varchar(64)	not null,
 
 	foreign key (pos_id) references pos(id) on delete cascade
-) engine = innodb;
-
-create table definition
-(
-	id		int		auto_increment not null primary key,
-	definition	text		not null
 ) engine = innodb;
 
 create table word_form

@@ -8,6 +8,10 @@ def index():
     if 'username' not in session:
         return redirect(url_for('login'))
 
+    username=escape(session['username'])
+    if not username:
+        return redirect(url_for('login'))
+
     return render_template('ack.html', 
                            username=escape(session['username']),
                            logout_url=url_for('logout'))
