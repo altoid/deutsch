@@ -16,6 +16,10 @@ def index():
                            username=username,
                            logout_url=url_for('logout'))
 
+@app.route('/addword')
+def addword():
+    return render_template('addword.html')
+
 @app.route('/logout', methods=['POST'])
 def logout():
     session.pop('username', None)

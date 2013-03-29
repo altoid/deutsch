@@ -1,11 +1,20 @@
 <html>
   <body>
-    logged in as {{ username }}
-
-    <form action="{{ logout_url }}" method="post">
-      <div class="button">
-	<button type="submit">Click here to log out</button>
-      </div>
-    </form>
+    <title>German Tutor</title>
+    <h1>logged in as {{ username }}</h1>
+    <table border='5'>
+      <tr>
+	<td>
+	  <br><a href='/addword'>Add a word</a>
+	  <br>menu item 2
+	  <br>menu item 3
+	  <form action="{{ logout_url }}" method="post">
+	    <button type="submit">Click here to log out</button>
+	  </form>
+	</td>
+	<td>
+	</td>
+      </tr>
+    </table>
   </body>
 </html>
