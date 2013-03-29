@@ -1,5 +1,6 @@
 from flask import Flask, session, request, url_for, escape, redirect, render_template
-import dbconfig
+import dtconfig
+from sqlalchemy import create_engine
 
 #
 # for some bizarre reason, you can't use from_pyfile
@@ -13,6 +14,9 @@ import dbconfig
 
 app = Flask(__name__)
 app.config.from_object('dtconfig.DTConfig')
+
+engine = create_engine(app.config['DSN'])
+conn = engine.connect()
 
 @app.route('/')
 def index():
@@ -29,13 +33,18 @@ def index():
 
 @app.route('/addword')
 def addword():
+    global conn
+    q = 'select id, name from pos'
+    result = conn.execute(q)
+    
     username=escape(session['username'])
     return render_template('addword.html',
                            username=username,
+                           result=result,
                            logout_url=url_for('logout'))
 
 @app.route('/showconfig')
-def addword():
+def showconfig():
     username=escape(session['username'])
     return render_template('showconfig.html',
                            username=username,
@@ -56,10 +65,6 @@ def login():
 
     session['username'] = request.form['username']
     return redirect(url_for('index'))
-
-@app.context_processor
-def inject_my_globals():
-    return dict(app_name='German Tutor')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')

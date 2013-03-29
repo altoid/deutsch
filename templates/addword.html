@@ -1,5 +1,14 @@
 {% extends 'base.html' %}
 
 {% block functionpage %}
-add word goes here
+
+<table>
+{% for row in result %}
+  <tr>
+    <td>{{row[0]}}</td>
+    <td>{{row[1]}}</td>
+  </tr>
+{% endfor %}
+</table>
+
 {% endblock %}
