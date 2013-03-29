@@ -4,4 +4,4 @@
 x
 venv/*
 *.BAK
-config.py
+dtconfig.py

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block functionpage %}
+
+{% if config %}
+
+  <table>
+    {% for c in config %}
+    <tr>
+      <td>{{ c }}</td> <td>{{ config[c] }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+{% else %}
+no config
+{% endif %}
+
+{% if app_config %}
+
+  <table>
+    {% for c in app_config %}
+    <tr>
+      <td>{{ c }}</td> <td>{{ app_config[c] }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+{% else %}
+no app_config
+{% endif %}
+
+{% endblock %}

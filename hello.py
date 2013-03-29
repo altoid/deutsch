@@ -1,7 +1,18 @@
 from flask import Flask, session, request, url_for, escape, redirect, render_template
+import dbconfig
+
+#
+# for some bizarre reason, you can't use from_pyfile
+# to import any user-defined variables.  the only variables
+# that could be set with from_pyfile are the ones well-known
+# to flask.  
+#
+# however, when using from_object, it was possible to inject
+# user-defined variables into the config.
+#
 
 app = Flask(__name__)
-app.config.from_pyfile('config.py')
+app.config.from_object('dtconfig.DTConfig')
 
 @app.route('/')
 def index():
@@ -23,6 +34,13 @@ def addword():
                            username=username,
                            logout_url=url_for('logout'))
 
+@app.route('/showconfig')
+def addword():
+    username=escape(session['username'])
+    return render_template('showconfig.html',
+                           username=username,
+                           logout_url=url_for('logout'))
+
 @app.route('/logout', methods=['POST'])
 def logout():
     session.pop('username', None)
@@ -38,6 +56,10 @@ def login():
 
     session['username'] = request.form['username']
     return redirect(url_for('index'))
+
+@app.context_processor
+def inject_my_globals():
+    return dict(app_name='German Tutor')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
