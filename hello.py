@@ -50,6 +50,22 @@ def showconfig():
                            username=username,
                            logout_url=url_for('logout'))
 
+@app.route('/showpos')
+def showpos():
+    q = '''
+select pos_form.attribute_id, attribute.name 
+from pos_form, attribute
+where pos_form.attribute_id = attribute.id
+and pos_form.pos_id = %s
+''' % (request.args.get('posid'))
+    result = conn.execute(q)
+
+    username=escape(session['username'])
+    return render_template('showpos.html',
+                           username=username,
+                           result=result,
+                           logout_url=url_for('logout'))
+
 @app.route('/logout', methods=['POST'])
 def logout():
     session.pop('username', None)
