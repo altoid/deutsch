@@ -12,13 +12,16 @@ def index():
     if not username:
         return redirect(url_for('login'))
 
-    return render_template('ack.html', 
+    return render_template('base.html', 
                            username=username,
                            logout_url=url_for('logout'))
 
 @app.route('/addword')
 def addword():
-    return render_template('addword.html')
+    username=escape(session['username'])
+    return render_template('addword.html',
+                           username=username,
+                           logout_url=url_for('logout'))
 
 @app.route('/logout', methods=['POST'])
 def logout():

@@ -1,6 +1,8 @@
 <html>
-  <body>
+  <head>
     <title>German Tutor</title>
+  </head>
+  <body>
     <h1>logged in as {{ username }}</h1>
     <table border='5'>
       <tr>
@@ -13,6 +15,8 @@
 	  </form>
 	</td>
 	<td>
+	  {% block functionpage %}
+	  {% endblock %}
 	</td>
       </tr>
     </table>
