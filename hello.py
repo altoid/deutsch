@@ -61,7 +61,8 @@ def add_word_to_db(word, pos_id):
     s = table_word.insert()
     result = conn.execute(s, word=word, pos_id=pos_id)
 
-    return result.inserted_primary_key
+    pklist = result.inserted_primary_key
+    return pklist[0]
 
 @app.route('/addword', methods=['GET', 'POST'])
 def addword():
