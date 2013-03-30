@@ -31,21 +31,47 @@ def index():
                            username=username,
                            logout_url=url_for('logout'))
 
+def word_exists(word, pos_id):
+
+    global conn
+    q = '''
+select * from word where word = '%s' and pos_id = %s
+''' % (word, pos_id)
+
+    result = conn.execute(q)
+    c = 0
+    for row in result:
+        c += 1
+
+    return c > 0
+
+def add_word_to_db(word, pos_id):
+
+    global conn
+    q = '''
+insert into word (word, pos_id) values ('%s', %s)
+''' % (word, pos_id)
+    result = conn.execute(q)
+
 @app.route('/addword', methods=['GET', 'POST'])
 def addword():
     global conn
 
-    form_values=None
-    posid=None
+    pos_id=None
     if request.method == 'POST':
-        form_values = {
-            'posid' : request.form['posid'],
-            'word' : request.form['word']
-            }
-        posid = request.form['posid']
-        statusmessage = str(form_values)
+        pos_id = request.form['pos_id']
+        word = request.form.get('word', None)
+        if not word:
+            statusmessage = 'Erk.  Type a word.'
+        elif word_exists(word, pos_id):
+            # check that the word isn't already there
+            statusmessage = '"%s" is already there' % word
+        else:
+            add_word_to_db(word, pos_id)
+            statusmessage = '"%s" added to dictionary' % word
+            
     else:
-        posid = request.args.get('posid')
+        pos_id = request.args.get('pos_id')
         statusmessage = None
 
     q = '''
@@ -53,7 +79,7 @@ select pos_form.attribute_id, attribute.name
 from pos_form, attribute
 where pos_form.attribute_id = attribute.id
 and pos_form.pos_id = %s
-''' % posid
+''' % pos_id
 
     result = conn.execute(q)
 
@@ -62,7 +88,7 @@ and pos_form.pos_id = %s
                            username=username,
                            result=result,
                            statusmessage=statusmessage,
-                           posid=posid,
+                           pos_id=pos_id,
                            logout_url=url_for('logout'))
 
 @app.route('/showconfig')
