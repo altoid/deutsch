@@ -4,10 +4,12 @@
   </head>
   <body>
     <h1>logged in as {{ username }}</h1>
+    {% block status %}
+    {% endblock %}
     <table border='5'>
       <tr>
 	<td>
-	  <br><a href='/addword'>Add a word</a>
+	  <br><a href='/showpos'>Add a word</a>
 	  <br><a href='/showconfig'>Show Config</a>
 	</td>
 	<td>

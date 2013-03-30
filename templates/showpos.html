@@ -6,10 +6,7 @@
 {% for row in result %}
   <tr>
     <td>
-      {{ row[0] }}
-    </td>
-    <td>
-      {{ row[1] }}
+      <a href='/addword?posid={{row[0]}}'>{{row[1]}}</a>
     </td>
   </tr>
 {% endfor %}

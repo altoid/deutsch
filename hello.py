@@ -31,16 +31,38 @@ def index():
                            username=username,
                            logout_url=url_for('logout'))
 
-@app.route('/addword')
+@app.route('/addword', methods=['GET', 'POST'])
 def addword():
     global conn
-    q = 'select id, name from pos'
+
+    form_values=None
+    posid=None
+    if request.method == 'POST':
+        form_values = {
+            'posid' : request.form['posid'],
+            'word' : request.form['word']
+            }
+        posid = request.form['posid']
+        statusmessage = str(form_values)
+    else:
+        posid = request.args.get('posid')
+        statusmessage = None
+
+    q = '''
+select pos_form.attribute_id, attribute.name 
+from pos_form, attribute
+where pos_form.attribute_id = attribute.id
+and pos_form.pos_id = %s
+''' % posid
+
     result = conn.execute(q)
-    
+
     username=escape(session['username'])
     return render_template('addword.html',
                            username=username,
                            result=result,
+                           statusmessage=statusmessage,
+                           posid=posid,
                            logout_url=url_for('logout'))
 
 @app.route('/showconfig')
@@ -52,12 +74,8 @@ def showconfig():
 
 @app.route('/showpos')
 def showpos():
-    q = '''
-select pos_form.attribute_id, attribute.name 
-from pos_form, attribute
-where pos_form.attribute_id = attribute.id
-and pos_form.pos_id = %s
-''' % (request.args.get('posid'))
+
+    q = 'select id, name from pos'
     result = conn.execute(q)
 
     username=escape(session['username'])
