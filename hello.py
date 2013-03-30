@@ -1,6 +1,7 @@
 from flask import Flask, session, request, url_for, escape, redirect, render_template
 import dtconfig
-from sqlalchemy import create_engine
+import sqlalchemy
+from sqlalchemy.sql import and_, or_, not_
 
 #
 # for some bizarre reason, you can't use from_pyfile
@@ -12,11 +13,18 @@ from sqlalchemy import create_engine
 # user-defined variables into the config.
 #
 
+# cf http://www.rmunn.com/sqlalchemy-tutorial/tutorial.html
+
 app = Flask(__name__)
 app.config.from_object('dtconfig.DTConfig')
 
-engine = create_engine(app.config['DSN'])
+engine = sqlalchemy.create_engine(app.config['DSN'])
+engine.echo = True
 conn = engine.connect()
+
+db_metadata = sqlalchemy.MetaData(engine)
+
+table_word = sqlalchemy.Table('word', db_metadata, autoload=True)
 
 @app.route('/')
 def index():
@@ -34,11 +42,11 @@ def index():
 def word_exists(word, pos_id):
 
     global conn
-    q = '''
-select * from word where word = '%s' and pos_id = %s
-''' % (word, pos_id)
+    global table_word
 
-    result = conn.execute(q)
+    s = sqlalchemy.select([table_word]).where(and_(table_word.c.word == word, table_word.c.pos_id == int(pos_id)))
+    result = conn.execute(s)
+
     c = 0
     for row in result:
         c += 1
@@ -48,10 +56,12 @@ select * from word where word = '%s' and pos_id = %s
 def add_word_to_db(word, pos_id):
 
     global conn
-    q = '''
-insert into word (word, pos_id) values ('%s', %s)
-''' % (word, pos_id)
-    result = conn.execute(q)
+    global table_word
+
+    s = table_word.insert()
+    result = conn.execute(s, word=word, pos_id=pos_id)
+
+    return result.inserted_primary_key
 
 @app.route('/addword', methods=['GET', 'POST'])
 def addword():
@@ -67,9 +77,11 @@ def addword():
             # check that the word isn't already there
             statusmessage = '"%s" is already there' % word
         else:
-            add_word_to_db(word, pos_id)
-            statusmessage = '"%s" added to dictionary' % word
-            
+            word_id = add_word_to_db(word, pos_id)
+            statusmessage = '"%s" added to dictionary, id = %s' % (word, str(word_id))
+
+        statusmessage += str(request.form)
+
     else:
         pos_id = request.args.get('pos_id')
         statusmessage = None
