@@ -73,27 +73,28 @@ def add_word_to_db(form):
     attr_names = [x[:-suffix_len] for x in attr_names]
     attr_ids = [x[1] for x in form.items() if x[0].endswith('_attribute_id')]
 
-    sql = '''
-insert into word (pos_id, word) values (%(pos_id)s, '%(word)s')
-''' % { 'pos_id' : pos_id, 'word' : word }
-    print sql
+    with conn.begin():  # this is how transactions are done with sqlalchemy
+        s = table_word.insert()
+        result = conn.execute(s, word=word, pos_id=pos_id)
 
-    word_id = 6666
+        pklist = result.inserted_primary_key
+        word_id = pklist[0]
 
-    s = 'insert into word_attributes (attribute_id, word_id, value) values'
-    for attr_name in attr_names:
-        attr_value = form.get('%s_attribute_key' % attr_name)
-        if attr_value:
-            s += ''' (%s, %d, '%s'),''' % (form.get('%s_attribute_id' % attr_name), word_id, attr_value)
+        attrs_to_insert = []
+        for attr_name in attr_names:
+            attr_value = form.get('%s_attribute_key' % attr_name)
+            if attr_value:
+                d = {
+                    'attribute_id' : form.get('%s_attribute_id' % attr_name),
+                    'word_id' : word_id,
+                    'value' : attr_value
+                    }
+                attrs_to_insert.append(d)
 
-    s = s[:-1]
-    print s
+        if len(attrs_to_insert) > 0:
+            result = conn.execute(table_word_attributes.insert(), attrs_to_insert)
 
-#    s = table_word.insert()
-#    result = conn.execute(s, word=word, pos_id=pos_id)
-#
-#    pklist = result.inserted_primary_key
-#    return pklist[0]
+        return word_id
 
 @app.route('/addword', methods=['GET', 'POST'])
 def addword():
