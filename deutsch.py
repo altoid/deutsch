@@ -54,6 +54,7 @@ def word_exists(word, pos_id):
         c = 0
         word_id = 0
         for row in result:
+            print row
             word_id = row[table_word.c.id]
             c += 1
 
@@ -66,11 +67,14 @@ def word_exists(word, pos_id):
         result = conn.execute(s)
         d = {}
         for row in result:
+            print row
             d[row[table_attribute.c.attrkey] + '_attribute_key'] = row[table_word_attributes.c.value]
             d[row[table_attribute.c.attrkey] + '_attribute_id'] = row[table_word_attributes.c.attribute_id]
 
         d['word'] = word
         d['word_id'] = word_id
+
+        print pprint.pformat(d)
 
         return d
 
@@ -115,17 +119,17 @@ def add_word_to_db(form):
 
         return word_id
 
-def update_word(form, word_info):
-    # word info is the blob returned by word_exists
-    # form has the new values, word_info has the current values
+def update_word(form):
+
+    # form has the current values plus whatever the user did to them
     
     suffix_len = len('_attribute_key')
     attr_names = [x[0][:-suffix_len] for x in form.items() if x[0].endswith('_attribute_key')]
 
     update_values = []
-    word_id = word_info.get('word_id')
+    word_id = form.get('word_id')
     for attr_name in attr_names:
-        old_value = word_info.get('%s_attribute_key' % attr_name)
+        old_value = form.get('%s_attribute_key' % attr_name)
         new_value = form.get('%s_attribute_key' % attr_name)
         attribute_id = int(form.get('%s_attribute_id' % attr_name))
         d = {
@@ -151,6 +155,7 @@ def addword():
 
     pos_id = None
     word_info = None
+    template_to_render = 'addword.html'
     if request.method == 'POST':
         pos_id = request.form['pos_id']
         word = request.form.get('word', None)
@@ -161,7 +166,7 @@ def addword():
             if word_info:
                 # check that the word isn't already there
                 statusmessage = '"%s" is already there' % word
-                update_word(request.form, word_info)
+                template_to_render = 'updateword.html'
             else:
                 word_id = add_word_to_db(request.form)
                 statusmessage = '"%s" added to dictionary, id = %s' % (word, str(word_id))
@@ -183,12 +188,37 @@ and pos_form.pos_id = %s
     attribute_info = conn.execute(q)
 
     username=escape(session['username'])
-    return render_template('addword.html',
+    return render_template(template_to_render,
                            username=username,
                            attribute_info=attribute_info,
                            statusmessage=statusmessage,
                            pos_id=pos_id,
                            word_info=word_info,
+                           logout_url=url_for('logout'))
+
+@app.route('/updateword', methods=['POST'])
+def updateword():
+    update_word(request.form)
+
+    pos_id = request.form.get('pos_id')
+
+    # this fetches the attribute names that will be displayed on the add word form.
+    q = '''
+select pos_form.attribute_id, attribute.attrkey
+from pos_form, attribute
+where pos_form.attribute_id = attribute.id
+and pos_form.pos_id = %s
+''' % pos_id
+
+    attribute_info = conn.execute(q)
+
+    statusmessage = '"%s" updated' % request.form.get('word')
+    username=escape(session['username'])
+    return render_template('addword.html',
+                           username=username,
+                           attribute_info=attribute_info,
+                           statusmessage=statusmessage,
+                           pos_id=pos_id,
                            logout_url=url_for('logout'))
 
 @app.route('/showconfig')
