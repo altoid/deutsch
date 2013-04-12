@@ -124,6 +124,7 @@ def addword():
     global conn
 
     pos_id = None
+    word_info = None
     if request.method == 'POST':
         pos_id = request.form['pos_id']
         word = request.form.get('word', None)
@@ -160,6 +161,7 @@ and pos_form.pos_id = %s
                            attribute_info=attribute_info,
                            statusmessage=statusmessage,
                            pos_id=pos_id,
+                           word_info=word_info,
                            logout_url=url_for('logout'))
 
 @app.route('/showconfig')

@@ -15,7 +15,7 @@
 	Word:
       </td>
       <td>
-	<input type='text' name='word'>
+	<input type='text' name='word' value='{{ word_info['word'] }}'>
       </td>
     </tr>
     {% for row in attribute_info %}
@@ -24,7 +24,7 @@
 	{{ row[1] }}:
       </td>
       <td>
-	<input type='text' name='{{ row[1]|lower }}_attribute_key'>
+	<input type='text' name='{{ row[1]|lower }}_attribute_key' value='{{ word_info[ [row[1]|lower, '_attribute_key']|join] }}'>
 	<input type='hidden' name='{{ row[1]|lower }}_attribute_id' value='{{ row[0] }}'>
       </td>
     </tr>
