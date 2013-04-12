@@ -72,9 +72,6 @@ def word_exists(word, pos_id):
         d['word'] = word
         d['word_id'] = word_id
 
-        ds = pprint.pformat(d)
-        print ds
-
         return d
 
 def add_word_to_db(form):
@@ -86,7 +83,6 @@ def add_word_to_db(form):
     # *_attribute_id
 
     global conn
-    global table_word
 
     pos_id = form.get('pos_id')
     word = form.get('word')
@@ -119,6 +115,36 @@ def add_word_to_db(form):
 
         return word_id
 
+def update_word(form, word_info):
+    # word info is the blob returned by word_exists
+    # form has the new values, word_info has the current values
+    
+    suffix_len = len('_attribute_key')
+    attr_names = [x[0][:-suffix_len] for x in form.items() if x[0].endswith('_attribute_key')]
+
+    update_values = []
+    word_id = word_info.get('word_id')
+    for attr_name in attr_names:
+        old_value = word_info.get('%s_attribute_key' % attr_name)
+        new_value = form.get('%s_attribute_key' % attr_name)
+        attribute_id = int(form.get('%s_attribute_id' % attr_name))
+        d = {
+            'c_attribute_id' : attribute_id,
+            'newvalue' : new_value # could be none, that's ok
+            }
+        update_values.append(d)
+    
+    '''
+    update word_attributes set value = newvalue where word_id = x and attribute_id = y
+    '''
+    
+    with conn.begin():
+        stmt = table_word_attributes.update().\
+            where(and_(table_word_attributes.c.word_id == word_id,
+                       table_word_attributes.c.attribute_id == sqlalchemy.bindparam('c_attribute_id'))).\
+                       values(value=sqlalchemy.bindparam('newvalue'))
+        conn.execute(stmt, update_values)
+
 @app.route('/addword', methods=['GET', 'POST'])
 def addword():
     global conn
@@ -135,6 +161,7 @@ def addword():
             if word_info:
                 # check that the word isn't already there
                 statusmessage = '"%s" is already there' % word
+                update_word(request.form, word_info)
             else:
                 word_id = add_word_to_db(request.form)
                 statusmessage = '"%s" added to dictionary, id = %s' % (word, str(word_id))

@@ -10,3 +10,5 @@ can we case-fold in a template?  yes, filters.
 styles to govern the size of text input fields
 
 delete values that have been cleared on editing
+
+clear button (need javascript)
