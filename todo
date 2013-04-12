@@ -1,0 +1,11 @@
+in add-word, the names for the fields shouldn't be the text that 
+is displayed - should have keys that are different from names
+
+adding a word to dict that is already there should populate the form,
+submit should update if necessary.  we can do that by setting
+the values of the input fields
+
+can we case-fold in a template?
+
+styles to govern the size of text input fields
+

@@ -25,6 +25,7 @@ conn = engine.connect()
 db_metadata = sqlalchemy.MetaData(engine)
 
 table_word = sqlalchemy.Table('word', db_metadata, autoload=True)
+table_word_attributes = sqlalchemy.Table('word_attributes', db_metadata, autoload=True)
 
 @app.route('/')
 def index():
@@ -53,16 +54,46 @@ def word_exists(word, pos_id):
 
     return c > 0
 
-def add_word_to_db(word, pos_id):
+def add_word_to_db(form):
+
+    # form is the filled-in form.  we need to pull out values for:
+    #
+    # pos_id
+    # word
+    # *_attribute_id
 
     global conn
     global table_word
 
-    s = table_word.insert()
-    result = conn.execute(s, word=word, pos_id=pos_id)
+    pos_id = form.get('pos_id')
+    word = form.get('word')
+    attr_values = [x[1] for x in form.items() if x[0].endswith('_attribute_key')]
+    attr_names = [x[0] for x in form.items() if x[0].endswith('_attribute_key')]
+    suffix_len = len('_attribute_key')
+    attr_names = [x[:-suffix_len] for x in attr_names]
+    attr_ids = [x[1] for x in form.items() if x[0].endswith('_attribute_id')]
 
-    pklist = result.inserted_primary_key
-    return pklist[0]
+    sql = '''
+insert into word (pos_id, word) values (%(pos_id)s, '%(word)s')
+''' % { 'pos_id' : pos_id, 'word' : word }
+    print sql
+
+    word_id = 6666
+
+    s = 'insert into word_attributes (attribute_id, word_id, value) values'
+    for attr_name in attr_names:
+        attr_value = form.get('%s_attribute_key' % attr_name)
+        if attr_value:
+            s += ''' (%s, %d, '%s'),''' % (form.get('%s_attribute_id' % attr_name), word_id, attr_value)
+
+    s = s[:-1]
+    print s
+
+#    s = table_word.insert()
+#    result = conn.execute(s, word=word, pos_id=pos_id)
+#
+#    pklist = result.inserted_primary_key
+#    return pklist[0]
 
 @app.route('/addword', methods=['GET', 'POST'])
 def addword():
@@ -78,7 +109,7 @@ def addword():
             # check that the word isn't already there
             statusmessage = '"%s" is already there' % word
         else:
-            word_id = add_word_to_db(word, pos_id)
+            word_id = add_word_to_db(request.form)
             statusmessage = '"%s" added to dictionary, id = %s' % (word, str(word_id))
 
         statusmessage += str(request.form)
@@ -88,7 +119,7 @@ def addword():
         statusmessage = None
 
     q = '''
-select pos_form.attribute_id, attribute.name 
+select pos_form.attribute_id, attribute.attrkey
 from pos_form, attribute
 where pos_form.attribute_id = attribute.id
 and pos_form.pos_id = %s
