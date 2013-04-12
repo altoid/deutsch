@@ -5,7 +5,8 @@ adding a word to dict that is already there should populate the form,
 submit should update if necessary.  we can do that by setting
 the values of the input fields
 
-can we case-fold in a template?
+can we case-fold in a template?  yes, filters.
 
 styles to govern the size of text input fields
 
+delete values that have been cleared on editing

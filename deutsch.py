@@ -1,6 +1,7 @@
 from flask import Flask, session, request, url_for, escape, redirect, render_template
 import dtconfig
 import sqlalchemy
+import pprint
 from sqlalchemy.sql import and_, or_, not_
 
 #
@@ -24,6 +25,7 @@ conn = engine.connect()
 
 db_metadata = sqlalchemy.MetaData(engine)
 
+table_attribute = sqlalchemy.Table('attribute', db_metadata, autoload=True)
 table_word = sqlalchemy.Table('word', db_metadata, autoload=True)
 table_word_attributes = sqlalchemy.Table('word_attributes', db_metadata, autoload=True)
 
@@ -45,14 +47,35 @@ def word_exists(word, pos_id):
     global conn
     global table_word
 
-    s = sqlalchemy.select([table_word]).where(and_(table_word.c.word == word, table_word.c.pos_id == int(pos_id)))
-    result = conn.execute(s)
+    with conn.begin():
+        s = sqlalchemy.select([table_word]).where(and_(table_word.c.word == word, table_word.c.pos_id == int(pos_id)))
+        result = conn.execute(s)
 
-    c = 0
-    for row in result:
-        c += 1
+        c = 0
+        word_id = 0
+        for row in result:
+            word_id = row[table_word.c.id]
+            c += 1
 
-    return c > 0
+        if c == 0:
+            return
+
+        s = sqlalchemy.select([table_attribute, table_word_attributes]). \
+            where(and_(table_attribute.c.id == table_word_attributes.c.attribute_id,
+                       table_word_attributes.c.word_id == word_id))
+        result = conn.execute(s)
+        d = {}
+        for row in result:
+            d[row[table_attribute.c.attrkey] + '_attribute_key'] = row[table_word_attributes.c.value]
+            d[row[table_attribute.c.attrkey] + '_attribute_id'] = row[table_word_attributes.c.attribute_id]
+
+        d['word'] = word
+        d['word_id'] = word_id
+
+        ds = pprint.pformat(d)
+        print ds
+
+        return d
 
 def add_word_to_db(form):
 
@@ -100,18 +123,20 @@ def add_word_to_db(form):
 def addword():
     global conn
 
-    pos_id=None
+    pos_id = None
     if request.method == 'POST':
         pos_id = request.form['pos_id']
         word = request.form.get('word', None)
         if not word:
             statusmessage = 'Erk.  Type a word.'
-        elif word_exists(word, pos_id):
-            # check that the word isn't already there
-            statusmessage = '"%s" is already there' % word
         else:
-            word_id = add_word_to_db(request.form)
-            statusmessage = '"%s" added to dictionary, id = %s' % (word, str(word_id))
+            word_info = word_exists(word, pos_id)
+            if word_info:
+                # check that the word isn't already there
+                statusmessage = '"%s" is already there' % word
+            else:
+                word_id = add_word_to_db(request.form)
+                statusmessage = '"%s" added to dictionary, id = %s' % (word, str(word_id))
 
         statusmessage += str(request.form)
 
@@ -119,6 +144,7 @@ def addword():
         pos_id = request.args.get('pos_id')
         statusmessage = None
 
+    # this fetches the attribute names that will be displayed on the add word form.
     q = '''
 select pos_form.attribute_id, attribute.attrkey
 from pos_form, attribute
@@ -126,12 +152,12 @@ where pos_form.attribute_id = attribute.id
 and pos_form.pos_id = %s
 ''' % pos_id
 
-    result = conn.execute(q)
+    attribute_info = conn.execute(q)
 
     username=escape(session['username'])
     return render_template('addword.html',
                            username=username,
-                           result=result,
+                           attribute_info=attribute_info,
                            statusmessage=statusmessage,
                            pos_id=pos_id,
                            logout_url=url_for('logout'))
