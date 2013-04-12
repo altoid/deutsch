@@ -4,6 +4,15 @@
   </head>
   <body>
     <h1>logged in as {{ username }}</h1>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          {{ message }}<br>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    
     {% block status %}
     {% endblock %}
     <table border='5'>

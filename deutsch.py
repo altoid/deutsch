@@ -1,4 +1,4 @@
-from flask import Flask, session, request, url_for, escape, redirect, render_template
+from flask import Flask, session, request, url_for, escape, redirect, render_template, flash
 import dtconfig
 import sqlalchemy
 import pprint
@@ -160,22 +160,19 @@ def addword():
         pos_id = request.form['pos_id']
         word = request.form.get('word', None)
         if not word:
-            statusmessage = 'Erk.  Type a word.'
+            flash('Erk.  Type a word.')
         else:
             word_info = word_exists(word, pos_id)
             if word_info:
                 # check that the word isn't already there
-                statusmessage = '"%s" is already there' % word
+                flash('"%s" is already there' % word)
                 template_to_render = 'updateword.html'
             else:
                 word_id = add_word_to_db(request.form)
-                statusmessage = '"%s" added to dictionary, id = %s' % (word, str(word_id))
-
-        statusmessage += str(request.form)
+                flash('"%s" added to dictionary, id = %s' % (word, str(word_id)))
 
     else:
         pos_id = request.args.get('pos_id')
-        statusmessage = None
 
     # this fetches the attribute names that will be displayed on the add word form.
     q = '''
@@ -191,13 +188,13 @@ and pos_form.pos_id = %s
     return render_template(template_to_render,
                            username=username,
                            attribute_info=attribute_info,
-                           statusmessage=statusmessage,
                            pos_id=pos_id,
                            word_info=word_info,
                            logout_url=url_for('logout'))
 
 @app.route('/updateword', methods=['POST'])
 def updateword():
+
     update_word(request.form)
 
     pos_id = request.form.get('pos_id')
