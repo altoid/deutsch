@@ -2,6 +2,7 @@ from flask import Flask, session, request, url_for, escape, redirect, render_tem
 import dtconfig
 import sqlalchemy
 import pprint
+import random
 from sqlalchemy.sql import and_, or_, not_
 
 #
@@ -25,9 +26,11 @@ conn = engine.connect()
 
 db_metadata = sqlalchemy.MetaData(engine)
 
-table_attribute = sqlalchemy.Table('attribute', db_metadata, autoload=True)
-table_word = sqlalchemy.Table('word', db_metadata, autoload=True)
+table_attribute       = sqlalchemy.Table('attribute', db_metadata, autoload=True)
+table_word            = sqlalchemy.Table('word', db_metadata, autoload=True)
 table_word_attributes = sqlalchemy.Table('word_attributes', db_metadata, autoload=True)
+table_quiz            = sqlalchemy.Table('quiz', db_metadata, autoload=True)
+table_quiz_structure  = sqlalchemy.Table('quiz_structure', db_metadata, autoload=True)
 
 @app.route('/')
 def index():
@@ -218,11 +221,69 @@ and pos_form.pos_id = %s
                            pos_id=pos_id,
                            logout_url=url_for('logout'))
 
-@app.route('/showconfig')
+@app.route('/config')
 def showconfig():
     username=escape(session['username'])
     return render_template('showconfig.html',
                            username=username,
+                           logout_url=url_for('logout'))
+
+@app.route('/quizzes')
+def showquizzes():
+
+    q = 'select id, name from quiz'
+    result = conn.execute(q)
+
+    username=escape(session['username'])
+    return render_template('quizlist.html',
+                           username=username,
+                           result=result,
+                           logout_url=url_for('logout'))
+
+@app.route('/quizzes/<quiz_id>')
+def take_quiz(quiz_id):
+
+    # select * from quiz where quiz_id = <quiz_id>
+    s = sqlalchemy.select([table_quiz]).where(table_quiz.c.id == quiz_id)
+    result = conn.execute(s)
+
+    if not result.returns_rows:
+        return 'well, shit.'
+
+    row = result.fetchone()
+    quiz_name=row['name']
+
+    # 'select distinct quiz_id, attribute_id from quiz_structure where quiz_id = ,quiz_id>'
+
+    s = sqlalchemy.select([table_quiz_structure]).where(table_quiz_structure.c.quiz_id == quiz_id)
+    result = conn.execute(s)
+
+    # turn the result into a structure that looks like this:
+    #
+    # <attribute_id> => [pos_ids]
+    #
+    # i.e. take all the attribute_ids and map them to a list of all them matching parts of speech
+
+    if not result.returns_rows:
+        return 'shit, no rows.'
+
+    quiz_dict = {}
+    for row in result:
+        r = quiz_dict.get(row['attribute_id'])
+        if not r:
+            quiz_dict[row['attribute_id']] = [row['pos_id']]
+        else:
+            quiz_dict[row['attribute_id']].append(row['pos_id'])
+
+    selected_attribute_id = random.choice(quiz_dict.keys())
+    selected_pos_id = random.choice(quiz_dict[selected_attribute_id])
+
+    username=escape(session['username'])
+    return render_template('showquiz.html',
+                           username=username,
+                           quiz_name=quiz_name,
+                           quiz_dict=quiz_dict,
+                           stuff=(quiz_id, selected_attribute_id, selected_pos_id),
                            logout_url=url_for('logout'))
 
 @app.route('/showpos')
