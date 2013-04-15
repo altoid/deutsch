@@ -6,10 +6,16 @@
 
 <br>
 
-word:  {{ word }}
-
 <form method='post' action='/quizzes/{{quiz_id}}/exact'>
   <table>
+    <tr>
+      <td>
+	word:
+      </td>
+      <td>
+	{{ word }}
+      </td>
+    </tr>
     <tr>
       <td>
 	{{ attrkey }}:
