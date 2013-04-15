@@ -2,14 +2,26 @@
 
 {% block functionpage %}
 
-you selected the quiz {{ quiz_name }}
+{{ quiz_name }}
 
 <br>
 
-{{ quiz_dict }}
+word:  {{ word }}
 
-<br>
-
-{{ stuff }}
+<form method='post' action='/quizzes/{{quiz_id}}/exact'>
+  <table>
+    <tr>
+      <td>
+	{{ attrkey }}:
+      </td>
+      <td>
+	<input type='text' name='response'>
+      </td>
+    </tr>
+  </table>
+  <input type='hidden' name='attribute_id' value='{{ attribute_id }}'>
+  <input type='hidden' name='word_id' value='{{ word_id }}'>
+  <button type='submit'>Submit Answer</button>
+</form>
 
 {% endblock %}

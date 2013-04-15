@@ -34,6 +34,7 @@ table_quiz_structure  = sqlalchemy.Table('quiz_structure', db_metadata, autoload
 
 @app.route('/')
 def index():
+
     if 'username' not in session:
         return redirect(url_for('login'))
 
@@ -41,7 +42,7 @@ def index():
     if not username:
         return redirect(url_for('login'))
 
-    return render_template('base.html', 
+    return render_template('base.html',
                            username=username,
                            logout_url=url_for('logout'))
 
@@ -240,20 +241,30 @@ def showquizzes():
                            result=result,
                            logout_url=url_for('logout'))
 
-@app.route('/quizzes/<quiz_id>')
-def take_quiz(quiz_id):
+def select_next_word(pos_id):
+
+    sql = 'select * from word where pos_id = %s order by rand() limit 1' % pos_id
+    result = conn.execute(sql)
+
+    row = result.first()
+    if row is None:
+        return None
+
+    word=row['word']
+    word_id=row['id']
+
+    return (word, word_id)
+
+def present_quiz_page(quiz_id):
 
     # select * from quiz where quiz_id = <quiz_id>
     s = sqlalchemy.select([table_quiz]).where(table_quiz.c.id == quiz_id)
     result = conn.execute(s)
 
-    if not result.returns_rows:
-        return 'well, shit.'
-
     row = result.fetchone()
     quiz_name=row['name']
 
-    # 'select distinct quiz_id, attribute_id from quiz_structure where quiz_id = ,quiz_id>'
+    # 'select distinct quiz_id, attribute_id from quiz_structure where quiz_id = <quiz_id>'
 
     s = sqlalchemy.select([table_quiz_structure]).where(table_quiz_structure.c.quiz_id == quiz_id)
     result = conn.execute(s)
@@ -278,13 +289,63 @@ def take_quiz(quiz_id):
     selected_attribute_id = random.choice(quiz_dict.keys())
     selected_pos_id = random.choice(quiz_dict[selected_attribute_id])
 
+    # select a random word.  handle the case of no words defined for a part of speech
+    # by showing an error message.
+
+    t = select_next_word(selected_pos_id)
+    if t is None:
+        return 'no words for POS %s' % selected_pos_id
+
+    word, word_id = t
+
+    s = sqlalchemy.select([table_attribute]).\
+        where(table_attribute.c.id == selected_attribute_id)
+    result = conn.execute(s)
+
+    row = result.first()
+    if row is None:
+        return 'can\'t find attribute id %s' % selected_attribute_id
+
+    attrkey = row['attrkey']
+
     username=escape(session['username'])
     return render_template('showquiz.html',
                            username=username,
                            quiz_name=quiz_name,
-                           quiz_dict=quiz_dict,
-                           stuff=(quiz_id, selected_attribute_id, selected_pos_id),
+                           quiz_id=quiz_id,
+                           word=word,
+                           word_id=word_id,
+                           attrkey=attrkey,
+                           attribute_id=selected_attribute_id,
                            logout_url=url_for('logout'))
+
+@app.route('/quizzes/<quiz_id>')
+def take_quiz(quiz_id):
+
+    return present_quiz_page(quiz_id)
+
+@app.route('/quizzes/<quiz_id>/exact', methods=(['POST']))
+def receive_answer(quiz_id):
+
+    # extract the submitted answer, compare to correct answer
+    answer = request.form.get('response').lower()
+    word_id = request.form.get('word_id')
+    attribute_id = request.form.get('attribute_id')
+
+    s = sqlalchemy.select([table_word_attributes]).\
+        where(and_(table_word_attributes.c.attribute_id == attribute_id,
+                   table_word_attributes.c.word_id == word_id))
+
+    result = conn.execute(s)
+    row = result.first()
+    correct_answer = row['value'].lower()
+
+    if correct_answer == answer:
+        flash('that answer was correct')
+    else:
+        flash('nope, the correct answer is %s' % correct_answer)
+
+    return present_quiz_page(quiz_id)
 
 @app.route('/showpos')
 def showpos():
