@@ -250,7 +250,7 @@ def select_next_word(quiz_id, pos_id):
 
     row = result.first()
     if row is None:
-        return None
+        raise Exception('no words for pos_id %s (quiz %s)' % (pos_id, quiz_id))
 
     return row['id']
 
@@ -273,7 +273,7 @@ def get_quiz_question_data(quiz_id):
     # i.e. take all the attribute_ids and map them to a list of all them matching parts of speech
 
     if not result.returns_rows:
-        return None
+        raise Exception('no such quiz id:  %s' % quiz_id)
 
     quiz_dict = {}
     for row in result:
@@ -291,9 +291,22 @@ def get_quiz_question_data(quiz_id):
 
     word_id = select_next_word(quiz_id, selected_pos_id)
 
-    if word_id is None:
+    # make sure there is a defined value for this attribute.  if not, return None
+
+    s = sqlalchemy.select([table_word_attributes]).\
+        where(and_(table_word_attributes.c.attribute_id == selected_attribute_id,
+                   table_word_attributes.c.word_id == word_id))
+    
+    result = conn.execute(s)
+    # result.returns_rows won't work - it will return True even if the query gives 0 rows
+
+    row = result.first()
+    if row is None:
+        print '###################################### word_id = %s' % word_id
         return None
 
+    word_id = row['word_id']
+    print '*********************** word_id = %s' % word_id
     return (word_id, selected_attribute_id)
 
 def present_quiz_page(quiz_id, word_id, attribute_id):
@@ -332,7 +345,12 @@ def present_quiz_page(quiz_id, word_id, attribute_id):
 @app.route('/quizzes/<quiz_id>')
 def take_quiz(quiz_id):
 
-    word_id, attribute_id = get_quiz_question_data(quiz_id)
+    while True:
+        t = get_quiz_question_data(quiz_id)
+        if t is not None:
+            break
+
+    word_id, attribute_id = t
 
     return present_quiz_page(quiz_id, word_id, attribute_id)
 
@@ -361,7 +379,12 @@ def receive_answer(quiz_id):
     else:
         flash('nope, the correct answer is %s' % correct_answer)
 
-    word_id, attribute_id = get_quiz_question_data(quiz_id)
+    while True:
+        t = get_quiz_question_data(quiz_id)
+        if t is not None:
+            break
+
+    word_id, attribute_id = t
     return present_quiz_page(quiz_id, word_id, attribute_id)
 
 @app.route('/showpos')
