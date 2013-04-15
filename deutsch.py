@@ -241,8 +241,10 @@ def showquizzes():
                            result=result,
                            logout_url=url_for('logout'))
 
-def select_next_word(pos_id):
-
+def select_next_word(quiz_id, pos_id):
+    '''
+    return the id of a word corresponding to the part of speech
+    '''
     sql = 'select * from word where pos_id = %s order by rand() limit 1' % pos_id
     result = conn.execute(sql)
 
@@ -250,20 +252,15 @@ def select_next_word(pos_id):
     if row is None:
         return None
 
-    word=row['word']
-    word_id=row['id']
+    return row['id']
 
-    return (word, word_id)
+def get_quiz_question_data(quiz_id):
+    '''
+    return a tuple containing all the info we need to present the next quiz question.
+    that tuple contains:
 
-def present_quiz_page(quiz_id):
-
-    # select * from quiz where quiz_id = <quiz_id>
-    s = sqlalchemy.select([table_quiz]).where(table_quiz.c.id == quiz_id)
-    result = conn.execute(s)
-
-    row = result.fetchone()
-    quiz_name=row['name']
-
+    (word_id, attribute_id)
+    '''
     # 'select distinct quiz_id, attribute_id from quiz_structure where quiz_id = <quiz_id>'
 
     s = sqlalchemy.select([table_quiz_structure]).where(table_quiz_structure.c.quiz_id == quiz_id)
@@ -276,7 +273,7 @@ def present_quiz_page(quiz_id):
     # i.e. take all the attribute_ids and map them to a list of all them matching parts of speech
 
     if not result.returns_rows:
-        return 'shit, no rows.'
+        return None
 
     quiz_dict = {}
     for row in result:
@@ -292,20 +289,33 @@ def present_quiz_page(quiz_id):
     # select a random word.  handle the case of no words defined for a part of speech
     # by showing an error message.
 
-    t = select_next_word(selected_pos_id)
-    if t is None:
-        return 'no words for POS %s' % selected_pos_id
+    word_id = select_next_word(quiz_id, selected_pos_id)
 
-    word, word_id = t
+    if word_id is None:
+        return None
+
+    return (word_id, selected_attribute_id)
+
+def present_quiz_page(quiz_id, word_id, attribute_id):
+
+    # select * from quiz where quiz_id = <quiz_id>
+    s = sqlalchemy.select([table_quiz]).where(table_quiz.c.id == quiz_id)
+
+    result = conn.execute(s)
+    row = result.fetchone()
+    quiz_name=row['name']
+
+    s = sqlalchemy.select([table_word]).where(table_word.c.id == word_id)
+
+    result = conn.execute(s)
+    row = result.first()
+    word = row['word']
 
     s = sqlalchemy.select([table_attribute]).\
-        where(table_attribute.c.id == selected_attribute_id)
+        where(table_attribute.c.id == attribute_id)
+
     result = conn.execute(s)
-
     row = result.first()
-    if row is None:
-        return 'can\'t find attribute id %s' % selected_attribute_id
-
     attrkey = row['attrkey']
 
     username=escape(session['username'])
@@ -316,21 +326,27 @@ def present_quiz_page(quiz_id):
                            word=word,
                            word_id=word_id,
                            attrkey=attrkey,
-                           attribute_id=selected_attribute_id,
+                           attribute_id=attribute_id,
                            logout_url=url_for('logout'))
 
 @app.route('/quizzes/<quiz_id>')
 def take_quiz(quiz_id):
 
-    return present_quiz_page(quiz_id)
+    word_id, attribute_id = get_quiz_question_data(quiz_id)
+
+    return present_quiz_page(quiz_id, word_id, attribute_id)
 
 @app.route('/quizzes/<quiz_id>/exact', methods=(['POST']))
 def receive_answer(quiz_id):
 
     # extract the submitted answer, compare to correct answer
-    answer = request.form.get('response').lower()
+    answer = request.form.get('response').strip().lower()
     word_id = request.form.get('word_id')
     attribute_id = request.form.get('attribute_id')
+
+    if not answer:
+        flash('type something, you idiot')
+        return present_quiz_page(quiz_id, word_id, attribute_id)
 
     s = sqlalchemy.select([table_word_attributes]).\
         where(and_(table_word_attributes.c.attribute_id == attribute_id,
@@ -345,7 +361,8 @@ def receive_answer(quiz_id):
     else:
         flash('nope, the correct answer is %s' % correct_answer)
 
-    return present_quiz_page(quiz_id)
+    word_id, attribute_id = get_quiz_question_data(quiz_id)
+    return present_quiz_page(quiz_id, word_id, attribute_id)
 
 @app.route('/showpos')
 def showpos():
