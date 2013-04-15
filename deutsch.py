@@ -32,8 +32,7 @@ table_word_attributes = sqlalchemy.Table('word_attributes', db_metadata, autoloa
 table_quiz            = sqlalchemy.Table('quiz', db_metadata, autoload=True)
 table_quiz_structure  = sqlalchemy.Table('quiz_structure', db_metadata, autoload=True)
 
-@app.route('/')
-def index():
+def my_render_template(template_name, **kwargs):
 
     if 'username' not in session:
         return redirect(url_for('login'))
@@ -42,9 +41,15 @@ def index():
     if not username:
         return redirect(url_for('login'))
 
-    return render_template('base.html',
-                           username=username,
-                           logout_url=url_for('logout'))
+    kwargs['username'] = username
+    kwargs['logout_url'] = url_for('logout')
+
+    return render_template(template_name, **kwargs)
+
+@app.route('/')
+def index():
+
+    return my_render_template('base.html')
 
 def word_exists(word, pos_id):
 
@@ -188,13 +193,10 @@ and pos_form.pos_id = %s
 
     attribute_info = conn.execute(q)
 
-    username=escape(session['username'])
-    return render_template(template_to_render,
-                           username=username,
-                           attribute_info=attribute_info,
-                           pos_id=pos_id,
-                           word_info=word_info,
-                           logout_url=url_for('logout'))
+    return my_render_template(template_to_render,
+                              attribute_info=attribute_info,
+                              pos_id=pos_id,
+                              word_info=word_info)
 
 @app.route('/updateword', methods=['POST'])
 def updateword():
@@ -214,20 +216,16 @@ and pos_form.pos_id = %s
     attribute_info = conn.execute(q)
 
     statusmessage = '"%s" updated' % request.form.get('word')
-    username=escape(session['username'])
-    return render_template('addword.html',
-                           username=username,
-                           attribute_info=attribute_info,
-                           statusmessage=statusmessage,
-                           pos_id=pos_id,
-                           logout_url=url_for('logout'))
+    return my_render_template('addword.html',
+                              username=username,
+                              attribute_info=attribute_info,
+                              statusmessage=statusmessage,
+                              pos_id=pos_id)
 
 @app.route('/config')
 def showconfig():
-    username=escape(session['username'])
-    return render_template('showconfig.html',
-                           username=username,
-                           logout_url=url_for('logout'))
+
+    return my_render_template('showconfig.html')
 
 @app.route('/quizzes')
 def showquizzes():
@@ -235,11 +233,8 @@ def showquizzes():
     q = 'select id, name from quiz'
     result = conn.execute(q)
 
-    username=escape(session['username'])
-    return render_template('quizlist.html',
-                           username=username,
-                           result=result,
-                           logout_url=url_for('logout'))
+    return my_render_template('quizlist.html',
+                              result=result)
 
 def select_next_word(quiz_id, pos_id):
     '''
@@ -331,16 +326,13 @@ def present_quiz_page(quiz_id, word_id, attribute_id):
     row = result.first()
     attrkey = row['attrkey']
 
-    username=escape(session['username'])
-    return render_template('showquiz.html',
-                           username=username,
-                           quiz_name=quiz_name,
-                           quiz_id=quiz_id,
-                           word=word,
-                           word_id=word_id,
-                           attrkey=attrkey,
-                           attribute_id=attribute_id,
-                           logout_url=url_for('logout'))
+    return my_render_template('showquiz.html',
+                              quiz_name=quiz_name,
+                              quiz_id=quiz_id,
+                              word=word,
+                              word_id=word_id,
+                              attrkey=attrkey,
+                              attribute_id=attribute_id)
 
 @app.route('/quizzes/<quiz_id>')
 def take_quiz(quiz_id):
@@ -393,11 +385,8 @@ def showpos():
     q = 'select id, name from pos'
     result = conn.execute(q)
 
-    username=escape(session['username'])
-    return render_template('showpos.html',
-                           username=username,
-                           result=result,
-                           logout_url=url_for('logout'))
+    return my_render_template('showpos.html',
+                              result=result)
 
 @app.route('/logout', methods=['POST'])
 def logout():
