@@ -3,7 +3,7 @@ import dtconfig
 import sqlalchemy
 import pprint
 import random
-from sqlalchemy.sql import and_, or_, not_
+from sqlalchemy.sql.expression import and_, or_, not_
 
 #
 # for some bizarre reason, you can't use from_pyfile
@@ -131,14 +131,13 @@ def add_word_to_db(form):
 def update_word(form):
 
     # form has the current values plus whatever the user did to them
-    
+
     suffix_len = len('_attribute_key')
     attr_names = [x[0][:-suffix_len] for x in form.items() if x[0].endswith('_attribute_key')]
 
     update_values = []
     word_id = form.get('word_id')
     for attr_name in attr_names:
-        old_value = form.get('%s_attribute_key' % attr_name)
         new_value = form.get('%s_attribute_key' % attr_name)
         attribute_id = int(form.get('%s_attribute_id' % attr_name))
         d = {
@@ -217,7 +216,6 @@ and pos_form.pos_id = %s
 
     statusmessage = '"%s" updated' % request.form.get('word')
     return my_render_template('addword.html',
-                              username=username,
                               attribute_info=attribute_info,
                               statusmessage=statusmessage,
                               pos_id=pos_id)
