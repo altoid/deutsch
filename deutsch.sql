@@ -46,6 +46,8 @@ create table if not exists word_attributes
 	word_id		int		not null,
 	value		varchar(1024),
 
+	primary key (attribute_id, word_id),
+
 	foreign key (attribute_id) references attribute(id) on delete cascade,
 	foreign key (word_id) references word(id) on delete cascade
 ) engine = innodb;
