@@ -241,18 +241,67 @@ def showquizzes():
     return my_render_template('quizlist.html',
                               result=result)
 
-def select_next_word(quiz_id, pos_id):
-    '''
-    return the id of a word corresponding to the part of speech
-    '''
-    sql = 'select * from word where pos_id = %s order by rand() limit 1' % pos_id
+def select_word_never_presented(quiz_id):
+
+    sql = '''
+select word.id from word
+inner join quiz_structure
+   on word.pos_id = quiz_structure.pos_id 
+   and quiz_structure.quiz_id = %s
+left join quiz_score 
+   on quiz_structure.quiz_id = quiz_score.quiz_id
+   and word.id = quiz_score.word_id
+where quiz_score.last_presentation is null
+order by rand()
+limit 1
+''' % (quiz_id)
+
     result = conn.execute(sql)
 
     row = result.first()
-    if row is None:
-        raise Exception('no words for pos_id %s (quiz %s)' % (pos_id, quiz_id))
+    if row:
+        return row['id']
 
-    return row['id']
+def select_word_few_presentations(quiz_id):
+
+    sql = '''
+select word.id from word
+inner join quiz_structure
+on word.pos_id = quiz_structure.pos_id and quiz_structure.quiz_id = %s
+inner join quiz_score on quiz_structure.quiz_id = quiz_score.quiz_id and word.id = quiz_score.word_id
+where presentation_count < 5
+order by rand()
+limit 1
+''' % (quiz_id)
+
+    result = conn.execute(sql)
+
+    row = result.first()
+    if row:
+        return row['id']
+
+def select_next_word(quiz_id, pos_id):
+
+    # return the id of a word corresponding to the part of speech
+    # words are selected in order of these criteria:
+    #
+
+    # 1. words that have never been presented for this quiz
+    word_id = select_word_never_presented(quiz_id)
+
+    if word_id:
+        return word_id
+
+    # 2. words that have not been presented in the last 7 days
+    word_id = select_word_few_presentations(quiz_id)
+
+    if word_id:
+        return word_id
+
+    # 3. words that have been presented fewer than 5 times
+    # 4. words with scores below 80%
+
+    raise Exception('no words for pos_id %s (quiz %s)' % (pos_id, quiz_id))
 
 def get_quiz_question_data(quiz_id):
     '''
