@@ -5,3 +5,6 @@ to get the db connector working:
 - pip install MySQL-python
 - ln /usr/local/mysql/lib/libmysqlclient.8.dylib to /usr/lib (use sudo)
 
+insert into word_attributes (attribute_id, word_id, value)
+values (1, 49, 'DIS'), (3, 49, 'BLATTS'), (5, 49, 'STUFF')
+on duplicate key update value=values(value);
