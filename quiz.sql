@@ -35,6 +35,6 @@ create table if not exists quiz_score
         foreign key (attribute_id) references attribute(id) on delete cascade,
         foreign key (word_id) references word(id) on delete cascade,
 
-	unique  key (quiz_id, word_id, attribute_id)
+        primary key (quiz_id, word_id, attribute_id)
 
 ) engine = innodb;

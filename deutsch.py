@@ -32,6 +32,7 @@ table_word            = sqlalchemy.Table('word', db_metadata, autoload=True)
 table_word_attributes = sqlalchemy.Table('word_attributes', db_metadata, autoload=True)
 table_quiz            = sqlalchemy.Table('quiz', db_metadata, autoload=True)
 table_quiz_structure  = sqlalchemy.Table('quiz_structure', db_metadata, autoload=True)
+table_quiz_score      = sqlalchemy.Table('quiz_score', db_metadata, autoload=True)
 
 def my_render_template(template_name, **kwargs):
 
@@ -54,9 +55,6 @@ def index():
 
 def word_exists(word, pos_id):
 
-    global conn
-    global table_word
-
     with conn.begin():
         s = select([table_word]).where(and_(table_word.c.word == word, table_word.c.pos_id == int(pos_id)))
         result = conn.execute(s)
@@ -64,7 +62,6 @@ def word_exists(word, pos_id):
         c = 0
         word_id = 0
         for row in result:
-            print row
             word_id = row[table_word.c.id]
             c += 1
 
@@ -77,7 +74,6 @@ def word_exists(word, pos_id):
         result = conn.execute(s)
         d = {}
         for row in result:
-            print row
             d[row[table_attribute.c.attrkey] + '_attribute_key'] = row[table_word_attributes.c.value]
             d[row[table_attribute.c.attrkey] + '_attribute_id'] = row[table_word_attributes.c.attribute_id]
 
@@ -306,11 +302,9 @@ def get_quiz_question_data(quiz_id):
 
     row = result.first()
     if row is None:
-        print '###################################### word_id = %s' % word_id
         return None
 
     word_id = row['word_id']
-    print '*********************** word_id = %s' % word_id
     return (word_id, selected_attribute_id)
 
 def present_quiz_page(quiz_id, word_id, attribute_id):
@@ -367,24 +361,38 @@ def receive_answer(quiz_id):
         flash('type something, you idiot')
         return present_quiz_page(quiz_id, word_id, attribute_id)
 
-    s = select([table_word_attributes]).\
-        where(and_(table_word_attributes.c.attribute_id == attribute_id,
-                   table_word_attributes.c.word_id == word_id))
+    with conn.begin():
+        s = select([table_word_attributes]).\
+            where(and_(table_word_attributes.c.attribute_id == attribute_id,
+                       table_word_attributes.c.word_id == word_id))
+    
+        result = conn.execute(s)
+        row = result.first()
+        correct_answer = row['value'].lower()
 
-    result = conn.execute(s)
-    row = result.first()
-    correct_answer = row['value'].lower()
+        insert_values = {
+            'quiz_id' : quiz_id,
+            'word_id' : word_id,
+            'attribute_id' : attribute_id,
+            'presentation_count' : 1
+            }
 
-    if correct_answer == answer:
-        flash('that answer was correct')
-    else:
-        flash('nope, the correct answer is %s' % correct_answer)
+        if correct_answer == answer:
+            flash('that answer was correct')
+            insert_values['correct_count'] = 1
+            update_clause = 'on duplicate key update presentation_count = presentation_count + 1, correct_count = correct_count + 1'
+        else:
+            flash('nope, the correct answer is %s' % correct_answer)
+            update_clause = 'on duplicate key update presentation_count = presentation_count + 1'
+
+        s = table_quiz_score.insert(append_string=update_clause)
+        conn.execute(s, insert_values)
 
     while True:
         t = get_quiz_question_data(quiz_id)
         if t is not None:
             break
-
+    
     word_id, attribute_id = t
     return present_quiz_page(quiz_id, word_id, attribute_id)
 
