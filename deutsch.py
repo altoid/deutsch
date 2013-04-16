@@ -3,7 +3,8 @@ import dtconfig
 import sqlalchemy
 import pprint
 import random
-from sqlalchemy.sql.expression import and_, or_, not_
+from sqlalchemy.sql.expression import *
+from sqlalchemy.ext.compiler import compiles
 
 #
 # for some bizarre reason, you can't use from_pyfile
@@ -57,7 +58,7 @@ def word_exists(word, pos_id):
     global table_word
 
     with conn.begin():
-        s = sqlalchemy.select([table_word]).where(and_(table_word.c.word == word, table_word.c.pos_id == int(pos_id)))
+        s = select([table_word]).where(and_(table_word.c.word == word, table_word.c.pos_id == int(pos_id)))
         result = conn.execute(s)
 
         c = 0
@@ -70,7 +71,7 @@ def word_exists(word, pos_id):
         if c == 0:
             return
 
-        s = sqlalchemy.select([table_attribute, table_word_attributes]). \
+        s = select([table_attribute, table_word_attributes]). \
             where(and_(table_attribute.c.id == table_word_attributes.c.attribute_id,
                        table_word_attributes.c.word_id == word_id))
         result = conn.execute(s)
@@ -128,6 +129,17 @@ def add_word_to_db(form):
 
         return word_id
 
+@compiles(Insert)
+def append_string(insert, compiler, **kw):
+    # cf. http://stackoverflow.com/questions/6611563/sqlalchemy-on-duplicate-key-update.
+    # the keyword passed to the insert method has to be the same as the method.  if we call the keyword 'zuchinni,'
+    # then this function has to be called zucchini too.
+
+    s = compiler.visit_insert(insert, **kw)
+    if 'append_string' in insert.kwargs:
+        return s + " " + insert.kwargs['append_string']
+    return s
+
 def update_word(form):
 
     # form has the current values plus whatever the user did to them
@@ -141,8 +153,9 @@ def update_word(form):
         new_value = form.get('%s_attribute_key' % attr_name)
         attribute_id = int(form.get('%s_attribute_id' % attr_name))
         d = {
-            'c_attribute_id' : attribute_id,
-            'newvalue' : new_value # could be none, that's ok
+            'attribute_id' : attribute_id,
+            'word_id' : word_id,
+            'value' : new_value # could be none, that's ok
             }
         update_values.append(d)
     
@@ -151,11 +164,9 @@ def update_word(form):
     '''
     
     with conn.begin():
-        stmt = table_word_attributes.update().\
-            where(and_(table_word_attributes.c.word_id == word_id,
-                       table_word_attributes.c.attribute_id == sqlalchemy.bindparam('c_attribute_id'))).\
-                       values(value=sqlalchemy.bindparam('newvalue'))
-        conn.execute(stmt, update_values)
+
+        s = table_word_attributes.insert(append_string = 'ON DUPLICATE KEY UPDATE value=VALUES(value)')
+        conn.execute(s, update_values)
 
 @app.route('/addword', methods=['GET', 'POST'])
 def addword():
@@ -256,7 +267,7 @@ def get_quiz_question_data(quiz_id):
     '''
     # 'select distinct quiz_id, attribute_id from quiz_structure where quiz_id = <quiz_id>'
 
-    s = sqlalchemy.select([table_quiz_structure]).where(table_quiz_structure.c.quiz_id == quiz_id)
+    s = select([table_quiz_structure]).where(table_quiz_structure.c.quiz_id == quiz_id)
     result = conn.execute(s)
 
     # turn the result into a structure that looks like this:
@@ -286,7 +297,7 @@ def get_quiz_question_data(quiz_id):
 
     # make sure there is a defined value for this attribute.  if not, return None
 
-    s = sqlalchemy.select([table_word_attributes]).\
+    s = select([table_word_attributes]).\
         where(and_(table_word_attributes.c.attribute_id == selected_attribute_id,
                    table_word_attributes.c.word_id == word_id))
     
@@ -305,19 +316,19 @@ def get_quiz_question_data(quiz_id):
 def present_quiz_page(quiz_id, word_id, attribute_id):
 
     # select * from quiz where quiz_id = <quiz_id>
-    s = sqlalchemy.select([table_quiz]).where(table_quiz.c.id == quiz_id)
+    s = select([table_quiz]).where(table_quiz.c.id == quiz_id)
 
     result = conn.execute(s)
     row = result.fetchone()
     quiz_name=row['name']
 
-    s = sqlalchemy.select([table_word]).where(table_word.c.id == word_id)
+    s = select([table_word]).where(table_word.c.id == word_id)
 
     result = conn.execute(s)
     row = result.first()
     word = row['word']
 
-    s = sqlalchemy.select([table_attribute]).\
+    s = select([table_attribute]).\
         where(table_attribute.c.id == attribute_id)
 
     result = conn.execute(s)
@@ -356,7 +367,7 @@ def receive_answer(quiz_id):
         flash('type something, you idiot')
         return present_quiz_page(quiz_id, word_id, attribute_id)
 
-    s = sqlalchemy.select([table_word_attributes]).\
+    s = select([table_word_attributes]).\
         where(and_(table_word_attributes.c.attribute_id == attribute_id,
                    table_word_attributes.c.word_id == word_id))
 
