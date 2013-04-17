@@ -291,13 +291,13 @@ def select_next_word(quiz_id):
         if word_id:
             return word_id
     
-        # 2. words that have not been presented in the last 7 days
+        # 2. words that have been presented fewer than 5 times
         word_id = select_word_few_presentations(quiz_id)
     
         if word_id:
             return word_id
     
-        # 3. words that have been presented fewer than 5 times
+        # 3. words that have not been presented in the last 7 days
         # 4. words with scores below 80%
 
     raise Exception('no words for quiz %s' % (quiz_id))
