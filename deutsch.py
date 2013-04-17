@@ -283,20 +283,22 @@ def select_next_word(quiz_id):
     # words are selected in order of these criteria:
     #
 
-    # 1. words that have never been presented for this quiz
-    word_id = select_word_never_presented(quiz_id)
+    with conn.begin():
 
-    if word_id:
-        return word_id
-
-    # 2. words that have not been presented in the last 7 days
-    word_id = select_word_few_presentations(quiz_id)
-
-    if word_id:
-        return word_id
-
-    # 3. words that have been presented fewer than 5 times
-    # 4. words with scores below 80%
+        # 1. words that have never been presented for this quiz
+        word_id = select_word_never_presented(quiz_id)
+    
+        if word_id:
+            return word_id
+    
+        # 2. words that have not been presented in the last 7 days
+        word_id = select_word_few_presentations(quiz_id)
+    
+        if word_id:
+            return word_id
+    
+        # 3. words that have been presented fewer than 5 times
+        # 4. words with scores below 80%
 
     raise Exception('no words for quiz %s' % (quiz_id))
 
@@ -390,55 +392,87 @@ def present_quiz_page(quiz_data):
                               word=word,
                               quiz_data=quiz_data)
 
-@app.route('/quizzes/<quiz_id>')
+@app.route('/quizzes/<quiz_id>', methods=(['GET', 'POST']))
 def take_quiz(quiz_id):
 
     quiz_data = get_quiz_question_data(conn, quiz_id)
 
     return present_quiz_page(quiz_data)
 
-@app.route('/quizzes/<quiz_id>/exact', methods=(['POST']))
-def receive_answer(quiz_id):
+@app.route('/quizzes/<quiz_id>/exact/<word_id>', methods=(['POST']))
+def receive_answer(quiz_id, word_id):
 
-    # extract the submitted answer, compare to correct answer
-    answer = request.form.get('response').strip().lower()
-    word_id = request.form.get('word_id')
-    attribute_id = request.form.get('attribute_id')
+    # get all the answers submitted in the form
 
-    if not answer:
-        flash('type something, you idiot')
-        return present_quiz_page(quiz_id, word_id, attribute_id)
+    suffix = '_attribute_key'
+    suffix_len = len(suffix)
+
+    attr_keys = [x[0][:-suffix_len] for x in request.form.items() if x[0].endswith('_attribute_key')]
+
+    my_answers = {}
+    keys_to_ids = {}
+    for k in attr_keys:
+        my_answers[k] = request.form.get(k + '_attribute_key').lower().strip()
+        keys_to_ids[k] = request.form.get(k + '_attribute_id').strip()
+
+    # get the correct answers from the database
 
     with conn.begin():
-        s = select([table_word_attributes]).\
-            where(and_(table_word_attributes.c.attribute_id == attribute_id,
-                       table_word_attributes.c.word_id == word_id))
-    
-        result = conn.execute(s)
-        row = result.first()
-        correct_answer = row['value'].lower()
+        sql = '''
+select a.id, a.attrkey, wa.value
+ from word_attributes wa,
+ quiz_structure qs,
+ attribute a
+ where wa.word_id = %s
+ and qs.quiz_id = %s
+ and qs.attribute_id = wa.attribute_id
+ and a.id = wa.attribute_id
+''' % (word_id, quiz_id)
 
-        insert_values = {
-            'quiz_id' : quiz_id,
-            'word_id' : word_id,
-            'attribute_id' : attribute_id,
-            'presentation_count' : 1
-            }
+        result = conn.execute(sql)
+        correct_answers = {}
+        for row in result:
+            correct_answers[row['attrkey']] = row['value']
 
-        if correct_answer == answer:
-            flash('that answer was correct')
-            insert_values['correct_count'] = 1
-            update_clause = 'on duplicate key update presentation_count = presentation_count + 1, correct_count = correct_count + 1'
-        else:
-            flash('nope, the correct answer is %s' % correct_answer)
-            update_clause = 'on duplicate key update presentation_count = presentation_count + 1'
+        correct_scores = []
+        incorrect_scores = []
+        for k in attr_keys:
+            if my_answers[k] == correct_answers[k]:
 
-        s = table_quiz_score.insert(append_string=update_clause)
-        conn.execute(s, insert_values)
+                d = {
+                    'quiz_id' : quiz_id,
+                    'word_id' : word_id,
+                    'attribute_id' : keys_to_ids[k],
+                    'presentation_count' : 1,
+                    'correct_count' : 1
+                }
 
-    quiz_data = get_quiz_question_data(conn, quiz_id)
-    
-    return present_quiz_page(quiz_data)
+                correct_scores.append(d)
+                correct_update_clause = 'on duplicate key update presentation_count = presentation_count + 1, correct_count = correct_count + 1'
+            else:
+                d = {
+                    'quiz_id' : quiz_id,
+                    'word_id' : word_id,
+                    'attribute_id' : keys_to_ids[k],
+                    'presentation_count' : 1
+                }
+
+                incorrect_scores.append(d)
+                incorrect_update_clause = 'on duplicate key update presentation_count = presentation_count + 1'
+
+        if len(correct_scores) > 0:
+            s = table_quiz_score.insert(append_string=correct_update_clause)
+            conn.execute(s, correct_scores)
+                
+        if len(incorrect_scores) > 0:
+            s = table_quiz_score.insert(append_string=incorrect_update_clause)
+            conn.execute(s, incorrect_scores)
+                
+    return my_render_template('gradequiz.html',
+                              quiz_id=quiz_id,
+                              attr_keys=attr_keys,
+                              my_answers=my_answers,
+                              correct_answers=correct_answers)
 
 @app.route('/showpos')
 def showpos():

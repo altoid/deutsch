@@ -6,7 +6,7 @@
 
 <br>
 
-<form method='post' action='/quizzes/{{ quiz_data['quiz_id'] }}/exact'>
+<form method='post' action='/quizzes/{{ quiz_data['quiz_id'] }}/exact/{{ quiz_data['word_id'] }}'>
   <table>
     <tr>
       <td>
@@ -28,7 +28,6 @@
     </tr>
     {% endfor %}
   </table>
-  <input type='hidden' name='word_id' value='{{ word_id }}'>
   <button type='submit'>Submit Answer</button>
 </form>
 

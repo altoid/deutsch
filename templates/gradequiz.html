@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block functionpage %}
+
+<table>
+
+{% for k in attr_keys %}
+
+<tr>
+  <td>{{ k }}</td>
+  <td>{{ my_answers[k] }}</td>
+  <td>{{ correct_answers[k] }}</td>
+  {% if my_answers[k] == correct_answers[k] %}
+  <td></td>
+  {% else %}
+  <td>X</td>
+  {% endif %}
+</tr>
+
+{% endfor %}
+
+</table>
+
+<form method='post' action='/quizzes/{{ quiz_id }}'>
+  <button type='submit'>Another</button>
+</form>
+
+{% endblock %}
