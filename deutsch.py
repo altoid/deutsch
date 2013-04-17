@@ -1,7 +1,6 @@
 from flask import Flask, session, request, url_for, escape, redirect, render_template, flash
 import dtconfig
 import sqlalchemy
-import pprint
 import random
 from sqlalchemy.sql.expression import *
 from sqlalchemy.ext.compiler import compiles
@@ -79,8 +78,6 @@ def word_exists(word, pos_id):
 
         d['word'] = word
         d['word_id'] = word_id
-
-        print pprint.pformat(d)
 
         return d
 
@@ -280,7 +277,7 @@ limit 1
     if row:
         return row['id']
 
-def select_next_word(quiz_id, pos_id):
+def select_next_word(quiz_id):
 
     # return the id of a word corresponding to the part of speech
     # words are selected in order of these criteria:
@@ -301,102 +298,104 @@ def select_next_word(quiz_id, pos_id):
     # 3. words that have been presented fewer than 5 times
     # 4. words with scores below 80%
 
-    raise Exception('no words for pos_id %s (quiz %s)' % (pos_id, quiz_id))
+    raise Exception('no words for quiz %s' % (quiz_id))
 
-def get_quiz_question_data(quiz_id):
-    '''
-    return a tuple containing all the info we need to present the next quiz question.
-    that tuple contains:
+def word_is_quizzable(conn, word_id, attribute_ids):
+    # return True IFF this word has values for all the attribute ids.
 
-    (word_id, attribute_id)
-    '''
-    # 'select distinct quiz_id, attribute_id from quiz_structure where quiz_id = <quiz_id>'
+    sql = ','.join(str(x) for x in attribute_ids)
 
-    s = select([table_quiz_structure]).where(table_quiz_structure.c.quiz_id == quiz_id)
-    result = conn.execute(s)
+    sql = 'select count(*) as c from word_attributes where attribute_id in (%s) and word_id = %s' % (sql, word_id)
 
-    # turn the result into a structure that looks like this:
-    #
-    # <attribute_id> => [pos_ids]
-    #
-    # i.e. take all the attribute_ids and map them to a list of all them matching parts of speech
-
-    if not result.returns_rows:
-        raise Exception('no such quiz id:  %s' % quiz_id)
-
-    quiz_dict = {}
-    for row in result:
-        r = quiz_dict.get(row['attribute_id'])
-        if not r:
-            quiz_dict[row['attribute_id']] = [row['pos_id']]
-        else:
-            quiz_dict[row['attribute_id']].append(row['pos_id'])
-
-    selected_attribute_id = random.choice(quiz_dict.keys())
-    selected_pos_id = random.choice(quiz_dict[selected_attribute_id])
-
-    # select a random word.  handle the case of no words defined for a part of speech
-    # by showing an error message.
-
-    word_id = select_next_word(quiz_id, selected_pos_id)
-
-    # make sure there is a defined value for this attribute.  if not, return None
-
-    s = select([table_word_attributes]).\
-        where(and_(table_word_attributes.c.attribute_id == selected_attribute_id,
-                   table_word_attributes.c.word_id == word_id))
-    
-    result = conn.execute(s)
-    # result.returns_rows won't work - it will return True even if the query gives 0 rows
-
+    result = conn.execute(sql)
     row = result.first()
-    if row is None:
-        return None
 
-    word_id = row['word_id']
-    return (word_id, selected_attribute_id)
+    count = row['c']
 
-def present_quiz_page(quiz_id, word_id, attribute_id):
+    return count == len(attribute_ids)
+
+def get_quiz_question_data(conn, quiz_id):
+
+    # return a json object containing all the info we need to present the next quiz question.
+    #
+    # {
+    #    quiz_id : <quiz_id>,
+    #    word_id : <word_id>,
+    #    attributes : [
+    #         { key : <key1>, id : <id1> },
+    #         { key : <key2>, id : <id2> }, ...
+    #    ]
+    # }
+
+    # get all the attribute ids that are associated with this quiz.  then select
+    # a word that has values for all the attribute ids.
+
+    sql = '''
+select distinct attribute.id, attribute.attrkey
+ from quiz_structure, attribute
+ where attribute_id = attribute.id and quiz_id = %s
+''' % (quiz_id)
+
+    result = conn.execute(sql)
+
+    returnMe = {}
+    returnMe['quiz_id'] = quiz_id
+    attributes = []
+    attribute_ids = []
+    for row in result:
+        attribute_ids.append(row['id'])
+        d = {
+            'key' : row['attrkey'],
+            'id' : row['id'] 
+            }
+
+        attributes.append(d)
+
+    returnMe['attributes'] = attributes
+
+    print '######## quiz %s has attributes %s' % (quiz_id, attribute_ids)
+    count = 0
+    while True:
+        word_id = select_next_word(quiz_id)
+
+        if word_is_quizzable(conn, word_id, attribute_ids):
+            break
+
+        count += 1
+        if count > 9:
+            raise Exception('''Panic:  can't find words for quiz %s''' % (quiz_id))
+
+
+    returnMe['word_id'] = word_id
+
+    return returnMe
+
+def present_quiz_page(quiz_data):
 
     # select * from quiz where quiz_id = <quiz_id>
-    s = select([table_quiz]).where(table_quiz.c.id == quiz_id)
+    sql = '''select name from quiz where id = %s''' % quiz_data['quiz_id']
 
-    result = conn.execute(s)
+    result = conn.execute(sql)
     row = result.fetchone()
     quiz_name=row['name']
 
-    s = select([table_word]).where(table_word.c.id == word_id)
+    sql = '''select word from word where id = %s''' % quiz_data['word_id']
 
-    result = conn.execute(s)
+    result = conn.execute(sql)
     row = result.first()
     word = row['word']
 
-    s = select([table_attribute]).\
-        where(table_attribute.c.id == attribute_id)
-
-    result = conn.execute(s)
-    row = result.first()
-    attrkey = row['attrkey']
-
     return my_render_template('showquiz.html',
                               quiz_name=quiz_name,
-                              quiz_id=quiz_id,
                               word=word,
-                              word_id=word_id,
-                              attrkey=attrkey,
-                              attribute_id=attribute_id)
+                              quiz_data=quiz_data)
 
 @app.route('/quizzes/<quiz_id>')
 def take_quiz(quiz_id):
 
-    while True:
-        t = get_quiz_question_data(quiz_id)
-        if t is not None:
-            break
+    quiz_data = get_quiz_question_data(conn, quiz_id)
 
-    word_id, attribute_id = t
-
-    return present_quiz_page(quiz_id, word_id, attribute_id)
+    return present_quiz_page(quiz_data)
 
 @app.route('/quizzes/<quiz_id>/exact', methods=(['POST']))
 def receive_answer(quiz_id):
@@ -437,13 +436,9 @@ def receive_answer(quiz_id):
         s = table_quiz_score.insert(append_string=update_clause)
         conn.execute(s, insert_values)
 
-    while True:
-        t = get_quiz_question_data(quiz_id)
-        if t is not None:
-            break
+    quiz_data = get_quiz_question_data(conn, quiz_id)
     
-    word_id, attribute_id = t
-    return present_quiz_page(quiz_id, word_id, attribute_id)
+    return present_quiz_page(quiz_data)
 
 @app.route('/showpos')
 def showpos():

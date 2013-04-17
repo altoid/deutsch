@@ -6,7 +6,7 @@
 
 <br>
 
-<form method='post' action='/quizzes/{{quiz_id}}/exact'>
+<form method='post' action='/quizzes/{{ quiz_data['quiz_id'] }}/exact'>
   <table>
     <tr>
       <td>
@@ -16,16 +16,18 @@
 	{{ word }}
       </td>
     </tr>
+    {% for attr in quiz_data.attributes %}
     <tr>
       <td>
-	{{ attrkey }}:
+	{{ attr['key'] }}:
       </td>
       <td>
-	<input type='text' name='response'>
+	<input type='text' name='{{ attr.key }}_attribute_key'>
+	<input type='hidden' name='{{ attr.key }}_attribute_id' value='{{ attr.id }}'>
       </td>
     </tr>
+    {% endfor %}
   </table>
-  <input type='hidden' name='attribute_id' value='{{ attribute_id }}'>
   <input type='hidden' name='word_id' value='{{ word_id }}'>
   <button type='submit'>Submit Answer</button>
 </form>
