@@ -8,3 +8,7 @@ to get the db connector working:
 insert into word_attributes (attribute_id, word_id, value)
 values (1, 49, 'DIS'), (3, 49, 'BLATTS'), (5, 49, 'STUFF')
 on duplicate key update value=values(value);
+
+quizzes - we can handle the case where a quiz exercises more than one part of speech
+now we need to handle the case where a quiz has 1 part of speech but multiple attributes
+- can't present a quiz that doesn't have all the attribute values filled in.
