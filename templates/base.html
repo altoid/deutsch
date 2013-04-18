@@ -23,10 +23,10 @@
 	  <br><a href='/quizzes'>Take a Quiz</a>
 	  <br><a href='/config'>Show Config</a>
 	</td>
-	<td>
-	  {% block functionpage %}
-	  {% endblock %}
-	</td>
+
+	{% block functionpage %}
+	{% endblock %}
+
       </tr>
     </table>
     <form action="{{ logout_url }}" method="post">

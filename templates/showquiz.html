@@ -2,33 +2,35 @@
 
 {% block functionpage %}
 
-{{ quiz_name }}
+<td>
 
-<br>
+  {{ quiz_name }}
 
-<form method='post' action='/quizzes/{{ quiz_data['quiz_id'] }}/exact/{{ quiz_data['word_id'] }}'>
-  <table>
-    <tr>
-      <td>
-	word:
-      </td>
-      <td>
-	{{ word }}
-      </td>
-    </tr>
-    {% for attr in quiz_data.attributes %}
-    <tr>
-      <td>
-	{{ attr['key'] }}:
-      </td>
-      <td>
-	<input type='text' name='{{ attr.key }}_attribute_key'>
-	<input type='hidden' name='{{ attr.key }}_attribute_id' value='{{ attr.id }}'>
-      </td>
-    </tr>
-    {% endfor %}
-  </table>
-  <button type='submit'>Submit Answer</button>
-</form>
+  <form method='post' action='/quizzes/{{ quiz_data['quiz_id'] }}/exact/{{ quiz_data['word_id'] }}'>
+    <table>
+      <tr>
+	<td>
+	  word:
+	</td>
+	<td>
+	  {{ word }}
+	</td>
+      </tr>
+      {% for attr in quiz_data.attributes %}
+      <tr>
+	<td>
+	  {{ attr['key'] }}:
+	</td>
+	<td>
+	  <input type='text' name='{{ attr.key }}_attribute_key'>
+	  <input type='hidden' name='{{ attr.key }}_attribute_id' value='{{ attr.id }}'>
+	</td>
+      </tr>
+      {% endfor %}
+    </table>
+    <button type='submit'>Submit Answer</button>
+  </form>
+
+</td>
 
 {% endblock %}

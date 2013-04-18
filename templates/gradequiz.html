@@ -2,33 +2,37 @@
 
 {% block functionpage %}
 
-<table>
+<td>
 
-<tr>
-  <th></th>
-  <th>Correct Answer</th>
-  <th>Your Answer</th>
-</tr>
+  <table>
 
-{% for k in attr_keys %}
+    <tr>
+      <th></th>
+      <th>Correct Answer</th>
+      <th>Your Answer</th>
+    </tr>
 
-<tr>
-  <td>{{ k }}</td>
-  <td>{{ correct_answers[k] }}</td>
-  <td>{{ my_answers[k] }}</td>
-  {% if my_answers[k] == correct_answers[k] %}
-  <td></td>
-  {% else %}
-  <td>X</td>
-  {% endif %}
-</tr>
+    {% for k in attr_keys %}
 
-{% endfor %}
+    <tr>
+      <td>{{ k }}</td>
+      <td>{{ correct_answers[k] }}</td>
+      <td>{{ my_answers[k] }}</td>
+      {% if my_answers[k] == correct_answers[k] %}
+      <td></td>
+      {% else %}
+      <td>X</td>
+      {% endif %}
+    </tr>
 
-</table>
+    {% endfor %}
 
-<form method='post' action='/quizzes/{{ quiz_id }}'>
-  <button type='submit'>Another</button>
-</form>
+  </table>
+
+  <form method='post' action='/quizzes/{{ quiz_id }}'>
+    <button type='submit'>Another</button>
+  </form>
+
+</td>
 
 {% endblock %}

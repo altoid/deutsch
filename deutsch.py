@@ -161,6 +161,12 @@ def update_word(form):
         s = table_word_attributes.insert(append_string = 'ON DUPLICATE KEY UPDATE value=VALUES(value)')
         conn.execute(s, update_values)
 
+def get_pos_rows(conn):
+
+    q = 'select id, name from pos'
+    result = conn.execute(q)
+    return result
+
 @app.route('/addword', methods=['GET', 'POST'])
 def addword():
     global conn
@@ -196,10 +202,13 @@ and pos_form.pos_id = %s
 
     attribute_info = conn.execute(q)
 
+    pos_rows = get_pos_rows(conn)
+
     return my_render_template(template_to_render,
                               attribute_info=attribute_info,
                               pos_id=pos_id,
-                              word_info=word_info)
+                              word_info=word_info,
+                              pos_rows=pos_rows)
 
 @app.route('/updateword', methods=['POST'])
 def updateword():
@@ -451,11 +460,10 @@ select a.id, a.attrkey, wa.value
 @app.route('/showpos')
 def showpos():
 
-    q = 'select id, name from pos'
-    result = conn.execute(q)
+    pos_rows = get_pos_rows(conn)
 
     return my_render_template('showpos.html',
-                              result=result)
+                              pos_rows=pos_rows)
 
 @app.route('/logout', methods=['POST'])
 def logout():

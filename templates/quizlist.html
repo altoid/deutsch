@@ -2,14 +2,18 @@
 
 {% block functionpage %}
 
-<table>
-{% for row in result %}
-  <tr>
-    <td>
-      <a href='/quizzes/{{row[0]}}'>{{row[1]}}</a>
-    </td>
-  </tr>
-{% endfor %}
-</table>
+<td>
+
+  <table>
+    {% for row in result %}
+    <tr>
+      <td>
+	<a href='/quizzes/{{row[0]}}'>{{row[1]}}</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+
+</td>
 
 {% endblock %}

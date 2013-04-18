@@ -1,33 +1,37 @@
-{% extends 'base.html' %}
+{% extends 'showpos.html' %}
 
-{% block functionpage %}
+{% block wordform %}
 
-<form method='post' action='/updateword'>
-  <table>
-    <tr>
-      <td>
-	Word:
-      </td>
-      <td>
-	{{ word_info['word'] }}
-	<input type='hidden' name='word_id' value='{{ word_info['word_id'] }}'>
-	<input type='hidden' name='word' value='{{ word_info['word'] }}'>
-      </td>
-    </tr>
-    {% for row in attribute_info %}
-    <tr>
-      <td>
-	{{ row[1] }}:
-      </td>
-      <td>
-	<input type='text' name='{{ row[1]|lower }}_attribute_key' value='{{ word_info[ [row[1]|lower, '_attribute_key']|join] }}'>
-	<input type='hidden' name='{{ row[1]|lower }}_attribute_id' value='{{ row[0] }}'>
-      </td>
-    </tr>
-    {% endfor %}
-  </table>
-  <input type='hidden' name='pos_id' value='{{ pos_id }}'>
-  <button type='submit'>Update Word</button>
-</form>
+<td>
+
+  <form method='post' action='/updateword'>
+    <table>
+      <tr>
+	<td>
+	  Word:
+	</td>
+	<td>
+	  {{ word_info['word'] }}
+	  <input type='hidden' name='word_id' value='{{ word_info['word_id'] }}'>
+	  <input type='hidden' name='word' value='{{ word_info['word'] }}'>
+	</td>
+      </tr>
+      {% for row in attribute_info %}
+      <tr>
+	<td>
+	  {{ row[1] }}:
+	</td>
+	<td>
+	  <input type='text' name='{{ row[1]|lower }}_attribute_key' value='{{ word_info[ [row[1]|lower, '_attribute_key']|join] }}'>
+	  <input type='hidden' name='{{ row[1]|lower }}_attribute_id' value='{{ row[0] }}'>
+	</td>
+      </tr>
+      {% endfor %}
+    </table>
+    <input type='hidden' name='pos_id' value='{{ pos_id }}'>
+    <button type='submit'>Update Word</button>
+  </form>
+
+</td>
 
 {% endblock %}

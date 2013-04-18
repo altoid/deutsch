@@ -2,7 +2,9 @@
 
 {% block functionpage %}
 
-{% if config %}
+<td>
+
+  {% if config %}
 
   <table>
     {% for c in config %}
@@ -12,10 +14,12 @@
     {% endfor %}
   </table>
 
-{% else %}
-no config
-{% endif %}
+  {% else %}
+  no config
+  {% endif %}
 
-{{ g }}
+  {{ g }}
+
+</td>
 
 {% endblock %}
