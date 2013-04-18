@@ -302,19 +302,28 @@ def select_next_word(quiz_id):
 
     raise Exception('no words for quiz %s' % (quiz_id))
 
-def word_is_quizzable(conn, word_id, attribute_ids):
+def word_is_quizzable(conn, word_id, quiz_id):
+
     # return True IFF this word has values for all the attribute ids.
 
-    sql = ','.join(str(x) for x in attribute_ids)
+    # this inner join counts the number of attributes defined for this quiz for which this word does
+    # not have a value.  if that number is 0, i.e. if all attribute values are given, we can quiz it.
 
-    sql = 'select count(*) as c from word_attributes where attribute_id in (%s) and word_id = %s' % (sql, word_id)
+    sql = '''
+select count(*) c
+from quiz
+inner join quiz_structure qs on quiz.id = qs.quiz_id and quiz_id = %s
+inner join attribute on qs.attribute_id = attribute.id
+left join word_attributes wa on qs.attribute_id= wa.attribute_id and word_id = %s
+where value is null
+''' % (quiz_id, word_id)
 
     result = conn.execute(sql)
     row = result.first()
 
     count = row['c']
 
-    return count == len(attribute_ids)
+    return count == 0
 
 def get_quiz_question_data(conn, quiz_id):
 
@@ -343,9 +352,8 @@ select distinct attribute.id, attribute.attrkey
     returnMe = {}
     returnMe['quiz_id'] = quiz_id
     attributes = []
-    attribute_ids = []
+
     for row in result:
-        attribute_ids.append(row['id'])
         d = {
             'key' : row['attrkey'],
             'id' : row['id'] 
@@ -355,12 +363,11 @@ select distinct attribute.id, attribute.attrkey
 
     returnMe['attributes'] = attributes
 
-    print '######## quiz %s has attributes %s' % (quiz_id, attribute_ids)
     count = 0
     while True:
         word_id = select_next_word(quiz_id)
 
-        if word_is_quizzable(conn, word_id, attribute_ids):
+        if word_is_quizzable(conn, word_id, quiz_id):
             break
 
         count += 1
