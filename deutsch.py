@@ -302,29 +302,6 @@ where qac.quiz_id = %s
 
         return random.choice(candidate_word_ids)
 
-def word_is_quizzable(conn, word_id, quiz_id):
-
-    # return True IFF this word has values for all the attribute ids.
-
-    # this inner join counts the number of attributes defined for this quiz for which this word does
-    # not have a value.  if that number is 0, i.e. if all attribute values are given, we can quiz it.
-
-    sql = '''
-select count(*) c
-from quiz
-inner join quiz_structure qs on quiz.id = qs.quiz_id and quiz_id = %s
-inner join attribute on qs.attribute_id = attribute.id
-left join word_attributes wa on qs.attribute_id= wa.attribute_id and word_id = %s
-where value is null
-''' % (quiz_id, word_id)
-
-    result = conn.execute(sql)
-    row = result.first()
-
-    count = row['c']
-
-    return count == 0
-
 def get_quiz_question_data(conn, quiz_id):
 
     # return a json object containing all the info we need to present the next quiz question.
@@ -363,17 +340,7 @@ select distinct attribute.id, attribute.attrkey
 
     returnMe['attributes'] = attributes
 
-    count = 0
-    while True:
-        word_id = select_next_word(quiz_id)
-
-        if word_is_quizzable(conn, word_id, quiz_id):
-            break
-
-        count += 1
-        if count > 9:
-            raise Exception('''Panic:  can't find words for quiz %s''' % (quiz_id))
-
+    word_id = select_next_word(quiz_id)
 
     returnMe['word_id'] = word_id
 
