@@ -38,3 +38,26 @@ create table if not exists quiz_score
         primary key (quiz_id, word_id, attribute_id)
 
 ) engine = innodb;
+
+-- this view shows the number of attributes defined for each word defined
+-- in the structure of a quiz.  helps us catch things like not all values
+-- being present for a verb conjugation.
+-- this view is not updatable because of the group by clause
+-- but it will correctly show changes to underlying tables
+create view quiz_attr_counts as
+select qs.*, w.id word_id, count(*) attrcount
+from word w, quiz_structure qs, word_attributes wa
+where w.pos_id = qs.pos_id
+and wa.word_id = w.id
+and wa.attribute_id = qs.attribute_id
+group by quiz_id, word_id
+;
+
+
+-- this view shows the number of attributes defined for each part of speech in a quiz structure
+create view quiz_attr_count as
+select distinct quiz.id quiz_id, qs.pos_id, qs.attribute_id, count(*) attrcount
+from quiz
+inner join quiz_structure qs on quiz.id = qs.quiz_id
+group by quiz.id, qs.pos_id
+;

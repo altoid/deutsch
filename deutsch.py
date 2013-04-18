@@ -279,28 +279,28 @@ limit 1
 
 def select_next_word(quiz_id):
 
-    # return the id of a word corresponding to the part of speech
-    # words are selected in order of these criteria:
-    #
-
     with conn.begin():
 
-        # 1. words that have never been presented for this quiz
-        word_id = select_word_never_presented(quiz_id)
-    
-        if word_id:
-            return word_id
-    
-        # 2. words that have been presented fewer than 5 times
-        word_id = select_word_few_presentations(quiz_id)
-    
-        if word_id:
-            return word_id
-    
-        # 3. words that have not been presented in the last 7 days
-        # 4. words with scores below 80%
+        # select the next word.  this query guarantees that
+        # the selected word has defined values for all the attributes
+        # tested by the quiz.
 
-    raise Exception('no words for quiz %s' % (quiz_id))
+        sql = '''
+select word_id from quiz_word_attr_count qwac
+inner join quiz_attr_count qac on qwac.quiz_id = qac.quiz_id
+and qwac.pos_id = qac.pos_id
+and qwac.attribute_id = qac.attribute_id
+and qwac.attrcount = qac.attrcount
+where qac.quiz_id = %s
+''' % (quiz_id)
+
+        candidate_word_ids = []
+        result = conn.execute(sql)
+
+        for row in result:
+            candidate_word_ids.append(row['word_id'])
+
+        return random.choice(candidate_word_ids)
 
 def word_is_quizzable(conn, word_id, quiz_id):
 
