@@ -1,7 +1,7 @@
 <html>
-  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}"/>
-  <link rel='stylesheet' href="{{ url_for('static', filename='style.css') }}"/>
   <head>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}"/>
+    <link rel='stylesheet' href="{{ url_for('static', filename='style.css') }}"/>
     <title> {{ config.APP_NAME }}</title>
   </head>
   <body>
@@ -17,12 +17,20 @@
     
     {% block status %}
     {% endblock %}
-    <table border='5'>
+    <table>
       <tr>
 	<td>
-	  <br><a href='/showpos'>Add a word</a>
-	  <br><a href='/quizzes'>Take a Quiz</a>
-	  <br><a href='/config'>Show Config</a>
+	  <table>
+	    <tr>
+	      <td><a href='/showpos'>Add a word</a></td>
+	    </tr>
+	    <tr>
+	      <td><a href='/quizzes'>Take a Quiz</a></td>
+	    </tr>
+	    <tr>
+	      <td><a href='/config'>Show Config</a></td>
+	    </tr>
+	  </table>
 	</td>
 
 	{% block functionpage %}
