@@ -35,5 +35,18 @@ class TestDeutsch(unittest.TestCase):
 
         print '\n%s' % (pprint.pformat(result))
 
+    def test_score(self):
+
+        score = deutsch.get_score(self.conn, 4, 1234)
+        print score
+
+        score = deutsch.get_score(self.conn, 4, 57)
+        print score
+
+        score = deutsch.get_score(self.conn, 1, 53)
+        q = deutsch.get_quintile(score)
+
+        print score, q
+
 if __name__ == '__main__':
     unittest.main()

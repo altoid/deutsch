@@ -355,6 +355,41 @@ select distinct attribute.id, attribute.attrkey
 
     return returnMe
 
+def get_score(conn, quiz_id, word_id):
+
+    sql = '''
+select sum(correct_count) / sum(presentation_count) score
+from quiz_score where quiz_id = %s
+and word_id = %s
+''' % (quiz_id, word_id)
+
+    result = conn.execute(sql)
+    row = result.first()
+
+    if row['score'] is None:
+        return None
+
+    return float(row['score'])
+
+def get_quintile(score):
+
+    if score is None:
+        return
+
+    if score < 0.20:
+        return 'fifth'
+
+    if score < 0.40:
+        return 'fourth'
+
+    if score < 0.60:
+        return 'third'
+
+    if score < 0.80:
+        return 'fourth'
+
+    return 'first'
+
 def present_quiz_page(quiz_data):
 
     # select * from quiz where quiz_id = <quiz_id>
@@ -370,9 +405,12 @@ def present_quiz_page(quiz_data):
     row = result.first()
     word = row['word']
 
+    quintile = get_quintile(get_score(conn, quiz_data['quiz_id'], quiz_data['word_id']))
+
     return my_render_template('showquiz.html',
                               quiz_name=quiz_name,
                               word=word,
+                              quintile=quintile,
                               quiz_data=quiz_data)
 
 @app.route('/quizzes/<quiz_id>', methods=(['GET', 'POST']))

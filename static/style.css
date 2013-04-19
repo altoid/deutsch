@@ -1,1 +1,25 @@
 h1 { color: red }
+
+/* quintiles */
+
+table.fifth { border:  5px solid red; }
+table.fourth { border:  5px solid orange; }
+table.third { border:  5px solid yellow; }
+table.second { border:  5px solid green; }
+table.first { border:  5px solid blue; }
+
+table { border: 5px solid black; }
+
+td { vertical-align:  top; }
+
+/*
+black - never seen
+red       [0, 20)
+orange    [20, 40)
+yellow    [40, 60)
+green     [60, 80)
+blue      [80, 100)
+*/
+
+
+

@@ -7,7 +7,7 @@
   {{ quiz_name }}
 
   <form method='post' action='/quizzes/{{ quiz_data['quiz_id'] }}/exact/{{ quiz_data['word_id'] }}'>
-    <table>
+    <table class='{{ quintile }}'>
       <tr>
 	<td>
 	  word:
