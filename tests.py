@@ -48,5 +48,11 @@ class TestDeutsch(unittest.TestCase):
 
         print score, q
 
+    def test_get_pos_attributes(self):
+
+        result = deutsch.get_pos_attributes(self.conn, 1)
+
+        print pprint.pformat(result)
+
 if __name__ == '__main__':
     unittest.main()

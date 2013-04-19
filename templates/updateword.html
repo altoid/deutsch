@@ -16,17 +16,19 @@
 	  <input type='hidden' name='word' value='{{ word_info['word'] }}'>
 	</td>
       </tr>
-      {% for row in attribute_info %}
+
+      {% for attr in attribute_info.attr_list %}
       <tr>
 	<td>
-	  {{ row[1] }}:
+	  {{ attr['attrkey'] }}:
 	</td>
 	<td>
-	  <input type='text' name='{{ row[1]|lower }}_attribute_key' value='{{ word_info[ [row[1]|lower, '_attribute_key']|join] }}'>
-	  <input type='hidden' name='{{ row[1]|lower }}_attribute_id' value='{{ row[0] }}'>
+	  <input type='text'   name='{{ attr['attrkey']|lower }}_attribute_key' value='{{ word_info[ [attr['attrkey']|lower, '_attribute_key']|join] }}'>
+	  <input type='hidden' name='{{ attr['attrkey']|lower }}_attribute_id' value='{{ attr['id'] }}'>
 	</td>
       </tr>
       {% endfor %}
+
     </table>
     <input type='hidden' name='pos_id' value='{{ pos_id }}'>
     <button type='submit'>Update Word</button>

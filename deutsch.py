@@ -167,6 +167,32 @@ def get_pos_rows(conn):
     result = conn.execute(q)
     return result
 
+def get_pos_attributes(conn, pos_id):
+
+    # returns raw DB rows that contain the attribute names that will
+    # be displayed on the add word form.
+
+    q = '''
+select pos_form.attribute_id, attribute.attrkey, pos.name
+from pos_form, attribute, pos
+where pos_form.attribute_id = attribute.id
+and pos.id = pos_form.pos_id
+and pos.id = %s
+''' % pos_id
+
+    result = conn.execute(q)
+    attr_list = []
+    final_result = {}
+    for row in result:
+        final_result['pos_name'] = row['name']
+        attr_list.append({
+                'id' : row['attribute_id'],
+                'attrkey' : row['attrkey']
+                })
+
+    final_result['attr_list'] = attr_list
+    return final_result
+
 @app.route('/addword', methods=['GET', 'POST'])
 def addword():
     global conn
@@ -193,14 +219,7 @@ def addword():
         pos_id = request.args.get('pos_id')
 
     # this fetches the attribute names that will be displayed on the add word form.
-    q = '''
-select pos_form.attribute_id, attribute.attrkey
-from pos_form, attribute
-where pos_form.attribute_id = attribute.id
-and pos_form.pos_id = %s
-''' % pos_id
-
-    attribute_info = conn.execute(q)
+    attribute_info = get_pos_attributes(conn, pos_id)
 
     pos_rows = get_pos_rows(conn)
 
@@ -218,20 +237,15 @@ def updateword():
     pos_id = request.form.get('pos_id')
 
     # this fetches the attribute names that will be displayed on the add word form.
-    q = '''
-select pos_form.attribute_id, attribute.attrkey
-from pos_form, attribute
-where pos_form.attribute_id = attribute.id
-and pos_form.pos_id = %s
-''' % pos_id
+    attribute_info = get_pos_attributes(conn, pos_id)
 
-    attribute_info = conn.execute(q)
-
+    pos_rows = get_pos_rows(conn)
     statusmessage = '"%s" updated' % request.form.get('word')
     return my_render_template('addword.html',
                               attribute_info=attribute_info,
                               statusmessage=statusmessage,
-                              pos_id=pos_id)
+                              pos_id=pos_id,
+                              pos_rows=pos_rows)
 
 @app.route('/config')
 def showconfig():
