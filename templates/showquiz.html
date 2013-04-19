@@ -1,36 +1,44 @@
-{% extends 'base.html' %}
+{% extends 'threeslabs.html' %}
 
-{% block functionpage %}
+{% block slab1 %}
 
-<td>
+{% include 'mainmenu.inc' %}
 
-  {{ quiz_name }}
+{% endblock %}
 
-  <form method='post' action='/quizzes/{{ quiz_data['quiz_id'] }}/exact/{{ quiz_data['word_id'] }}'>
-    <table class='{{ quintile }}'>
-      <tr>
-	<td>
-	  word:
-	</td>
-	<td>
-	  {{ word }}
-	</td>
-      </tr>
-      {% for attr in quiz_data.attributes %}
-      <tr>
-	<td>
-	  {{ attr['key'] }}:
-	</td>
-	<td>
-	  <input type='text' name='{{ attr.key }}_attribute_key'>
-	  <input type='hidden' name='{{ attr.key }}_attribute_id' value='{{ attr.id }}'>
-	</td>
-      </tr>
-      {% endfor %}
-    </table>
-    <button type='submit'>Submit Answer</button>
-  </form>
+{% block slab2 %}
 
-</td>
+{% include 'quizlist.inc' %}
+
+{% endblock %}
+
+{% block slab3 %}
+
+{{ quiz_name }}
+
+<form method='post' action='/quizzes/{{ quiz_data['quiz_id'] }}/exact/{{ quiz_data['word_id'] }}'>
+  <table class='{{ quintile }}'>
+    <tr>
+      <td>
+	word:
+      </td>
+      <td>
+	{{ word }}
+      </td>
+    </tr>
+    {% for attr in quiz_data.attributes %}
+    <tr>
+      <td>
+	{{ attr['key'] }}:
+      </td>
+      <td>
+	<input type='text' name='{{ attr.key }}_attribute_key'>
+	<input type='hidden' name='{{ attr.key }}_attribute_id' value='{{ attr.id }}'>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  <button type='submit'>Submit Answer</button>
+</form>
 
 {% endblock %}

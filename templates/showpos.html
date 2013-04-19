@@ -1,22 +1,13 @@
-{% extends 'base.html' %}
+{% extends 'twoslabs.html' %}
 
-{% block functionpage %}
+{% block slab1 %}
 
-<td>
+{% include 'mainmenu.inc' %}
 
-  <table>
-    {% for row in pos_rows %}
-    <tr>
-      <td>
-	<a href='/addword?pos_id={{row[0]}}'>{{row[1]}}</a>
-      </td>
-    </tr>
-    {% endfor %}
-  </table>
-
-</td>
-
-{% block wordform %}
 {% endblock %}
+
+{% block slab2 %}
+
+{% include 'poslist.inc' %}
 
 {% endblock %}

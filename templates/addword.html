@@ -1,40 +1,48 @@
-{% extends 'showpos.html' %}
+{% extends 'threeslabs.html' %}
 
-{% block wordform %}
+{% block slab1 %}
 
-<td>
+{% include 'mainmenu.inc' %}
 
-  <form method='post' action='/addword'>
-    <table>
-      <tr>
-	<td colspan=2>
-	  Adding {{ attribute_info['pos_name'] }}
-	</td>
-      </tr>
-      <tr>
-	<td>
-	  Word:
-	</td>
-	<td>
-	  <input type='text' name='word'>
-	</td>
-      </tr>
-      {% for attr in attribute_info.attr_list %}
-      <tr>
-	<td>
-	  {{ attr['attrkey'] }}:
-	</td>
-	<td>
-	  <input type='text'   name='{{ attr['attrkey']|lower }}_attribute_key'>
-	  <input type='hidden' name='{{ attr['attrkey']|lower }}_attribute_id' value='{{ attr['id'] }}'>
-	</td>
-      </tr>
-      {% endfor %}
-    </table>
-    <input type='hidden' name='pos_id' value='{{ pos_id }}'>
-    <button type='submit'>Add to Dictionary</button>
-  </form>
+{% endblock %}
 
-</td>
+{% block slab2 %}
+
+{% include 'poslist.inc' %}
+
+{% endblock %}
+
+{% block slab3 %}
+
+<form method='post' action='/addword'>
+  <table>
+    <tr>
+      <td colspan=2>
+	Adding {{ attribute_info['pos_name'] }}
+      </td>
+    </tr>
+    <tr>
+      <td>
+	Word:
+      </td>
+      <td>
+	<input type='text' name='word'>
+      </td>
+    </tr>
+    {% for attr in attribute_info.attr_list %}
+    <tr>
+      <td>
+	{{ attr['attrkey'] }}:
+      </td>
+      <td>
+	<input type='text'   name='{{ attr['attrkey']|lower }}_attribute_key'>
+	<input type='hidden' name='{{ attr['attrkey']|lower }}_attribute_id' value='{{ attr['id'] }}'>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  <input type='hidden' name='pos_id' value='{{ pos_id }}'>
+  <button type='submit'>Add to Dictionary</button>
+</form>
 
 {% endblock %}

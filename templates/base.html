@@ -15,28 +15,11 @@
       {% endif %}
     {% endwith %}
     
-    {% block status %}
-    {% endblock %}
     <table>
-      <tr>
-	<td>
-	  <table>
-	    <tr>
-	      <td><a href='/showpos'>Add a word</a></td>
-	    </tr>
-	    <tr>
-	      <td><a href='/quizzes'>Take a Quiz</a></td>
-	    </tr>
-	    <tr>
-	      <td><a href='/config'>Show Config</a></td>
-	    </tr>
-	  </table>
-	</td>
 
-	{% block functionpage %}
-	{% endblock %}
+      {% block slabs %}
+      {% endblock %}
 
-      </tr>
     </table>
     <form action="{{ logout_url }}" method="post">
       <button type="submit">Click here to log out</button>

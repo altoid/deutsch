@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block slabs %}
+
+<tr>
+  <td class='outermost'>
+    {% block slab1 %}
+    {% endblock %}
+  </td>
+
+  <td class='outermost'>
+    {% block slab2 %}
+    {% endblock %}
+  </td>
+
+  <td class='outermost'>
+    {% block slab3 %}
+    {% endblock %}
+  </td>
+</tr>
+
+{% endblock %}

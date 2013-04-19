@@ -1,19 +1,13 @@
-{% extends 'base.html' %}
+{% extends 'twoslabs.html' %}
 
-{% block functionpage %}
+{% block slab1 %}
 
-<td>
+{% include 'mainmenu.inc' %}
 
-  <table>
-    {% for row in result %}
-    <tr>
-      <td>
-	<a href='/quizzes/{{row[0]}}'>{{row[1]}}</a>
-      </td>
-    </tr>
-    {% endfor %}
-  </table>
+{% endblock %}
 
-</td>
+{% block slab2 %}
+
+{% include 'quizlist.inc' %}
 
 {% endblock %}

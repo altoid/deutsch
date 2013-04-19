@@ -1,38 +1,46 @@
-{% extends 'base.html' %}
+{% extends 'threeslabs.html' %}
 
-{% block functionpage %}
+{% block slab1 %}
 
-<td>
+{% include 'mainmenu.inc' %}
 
-  <table>
+{% endblock %}
 
-    <tr>
-      <th></th>
-      <th>Correct Answer</th>
-      <th>Your Answer</th>
-    </tr>
+{% block slab2 %}
 
-    {% for k in attr_keys %}
+{% include 'quizlist.inc' %}
 
-    <tr>
-      <td>{{ k }}</td>
-      <td>{{ correct_answers[k] }}</td>
-      <td>{{ my_answers[k] }}</td>
-      {% if my_answers[k] == correct_answers[k] %}
-      <td></td>
-      {% else %}
-      <td>X</td>
-      {% endif %}
-    </tr>
+{% endblock %}
 
-    {% endfor %}
+{% block slab3 %}
 
-  </table>
+<table>
 
-  <form method='post' action='/quizzes/{{ quiz_id }}'>
-    <button type='submit'>Another</button>
-  </form>
+  <tr>
+    <th></th>
+    <th>Correct Answer</th>
+    <th>Your Answer</th>
+  </tr>
 
-</td>
+  {% for k in attr_keys %}
+
+  <tr>
+    <td>{{ k }}</td>
+    <td>{{ correct_answers[k] }}</td>
+    <td>{{ my_answers[k] }}</td>
+    {% if my_answers[k] == correct_answers[k] %}
+    <td></td>
+    {% else %}
+    <td>X</td>
+    {% endif %}
+  </tr>
+
+  {% endfor %}
+
+</table>
+
+<form method='post' action='/quizzes/{{ quiz_id }}'>
+  <button type='submit'>Another</button>
+</form>
 
 {% endblock %}

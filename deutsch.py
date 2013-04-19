@@ -50,7 +50,7 @@ def my_render_template(template_name, **kwargs):
 @app.route('/')
 def index():
 
-    return my_render_template('base.html')
+    return my_render_template('mainmenu.html')
 
 def word_exists(word, pos_id):
 
@@ -252,14 +252,26 @@ def showconfig():
 
     return my_render_template('showconfig.html')
 
-@app.route('/quizzes')
-def showquizzes():
+def get_quiz_list(conn):
 
     q = 'select id, name from quiz'
     result = conn.execute(q)
+    d = []
+    for row in result:
+        d.append( {
+                'id' : row['id'],
+                'name' : row['name']
+                })
+
+    return d
+
+@app.route('/quizzes')
+def showquizzes():
+
+    quiz_list = get_quiz_list(conn)
 
     return my_render_template('quizlist.html',
-                              result=result)
+                              quiz_list=quiz_list)
 
 def select_word_never_presented(quiz_id):
 
@@ -421,11 +433,14 @@ def present_quiz_page(quiz_data):
 
     quintile = get_quintile(get_score(conn, quiz_data['quiz_id'], quiz_data['word_id']))
 
+    quiz_list = get_quiz_list(conn)
+
     return my_render_template('showquiz.html',
                               quiz_name=quiz_name,
                               word=word,
                               quintile=quintile,
-                              quiz_data=quiz_data)
+                              quiz_data=quiz_data,
+                              quiz_list=quiz_list)
 
 @app.route('/quizzes/<quiz_id>', methods=(['GET', 'POST']))
 def take_quiz(quiz_id):
@@ -507,6 +522,7 @@ select a.id, a.attrkey, wa.value
                               quiz_id=quiz_id,
                               attr_keys=attr_keys,
                               my_answers=my_answers,
+                              quiz_list=get_quiz_list(conn),
                               correct_answers=correct_answers)
 
 @app.route('/showpos')

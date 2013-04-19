@@ -1,25 +1,27 @@
-{% extends 'base.html' %}
+{% extends 'twoslabs.html' %}
 
-{% block functionpage %}
+{% block slab1 %}
 
-<td>
+{% include 'mainmenu.inc' %}
 
-  {% if config %}
+{% endblock %}
 
-  <table>
-    {% for c in config %}
-    <tr>
-      <td>{{ c }}</td> <td>{{ config[c] }}</td>
-    </tr>
-    {% endfor %}
-  </table>
+{% block slab2 %}
 
-  {% else %}
-  no config
-  {% endif %}
+{% if config %}
 
-  {{ g }}
+<table>
+  {% for c in config %}
+  <tr>
+    <td>{{ c }}</td> <td>{{ config[c] }}</td>
+  </tr>
+  {% endfor %}
+</table>
 
-</td>
+{% else %}
+no config
+{% endif %}
+
+{{ g }}
 
 {% endblock %}
