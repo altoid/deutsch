@@ -400,7 +400,7 @@ and word_id = %s
 def get_quintile(score):
 
     if score is None:
-        return
+        return 'untested'
 
     if score < 0.20:
         return 'fifth'
