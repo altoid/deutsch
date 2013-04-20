@@ -14,7 +14,7 @@
 
 {% block slab3 %}
 
-<form method='post' action='/addword'>
+<form method='post' action='/addword/{{ pos_id }}'>
   <table>
     <tr>
       <td colspan=2>
@@ -41,7 +41,6 @@
     </tr>
     {% endfor %}
   </table>
-  <input type='hidden' name='pos_id' value='{{ pos_id }}'>
   <button type='submit'>Add to Dictionary</button>
 </form>
 

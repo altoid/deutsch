@@ -52,36 +52,35 @@ def index():
 
     return my_render_template('mainmenu.html')
 
-def word_exists(word, pos_id):
+def word_exists(conn, word, pos_id):
 
-    with conn.begin():
-        s = select([table_word]).where(and_(table_word.c.word == word, table_word.c.pos_id == int(pos_id)))
-        result = conn.execute(s)
+    s = select([table_word]).where(and_(table_word.c.word == word, table_word.c.pos_id == int(pos_id)))
+    result = conn.execute(s)
 
-        c = 0
-        word_id = 0
-        for row in result:
-            word_id = row[table_word.c.id]
-            c += 1
+    c = 0
+    word_id = 0
+    for row in result:
+        word_id = row[table_word.c.id]
+        c += 1
 
-        if c == 0:
-            return
+    if c == 0:
+        return
 
-        s = select([table_attribute, table_word_attributes]). \
-            where(and_(table_attribute.c.id == table_word_attributes.c.attribute_id,
-                       table_word_attributes.c.word_id == word_id))
-        result = conn.execute(s)
-        d = {}
-        for row in result:
-            d[row[table_attribute.c.attrkey] + '_attribute_key'] = row[table_word_attributes.c.value]
-            d[row[table_attribute.c.attrkey] + '_attribute_id'] = row[table_word_attributes.c.attribute_id]
+    s = select([table_attribute, table_word_attributes]). \
+        where(and_(table_attribute.c.id == table_word_attributes.c.attribute_id,
+                   table_word_attributes.c.word_id == word_id))
+    result = conn.execute(s)
+    d = {}
+    for row in result:
+        d[row[table_attribute.c.attrkey] + '_attribute_key'] = row[table_word_attributes.c.value]
+        d[row[table_attribute.c.attrkey] + '_attribute_id'] = row[table_word_attributes.c.attribute_id]
 
-        d['word'] = word
-        d['word_id'] = word_id
+    d['word'] = word
+    d['word_id'] = word_id
 
-        return d
+    return d
 
-def add_word_to_db(form):
+def add_word_to_db(conn, form, pos_id):
 
     # form is the filled-in form.  we need to pull out values for:
     #
@@ -89,9 +88,6 @@ def add_word_to_db(form):
     # word
     # *_attribute_id
 
-    global conn
-
-    pos_id = form.get('pos_id')
     word = form.get('word')
     attr_values = [x[1] for x in form.items() if x[0].endswith('_attribute_key')]
     attr_names = [x[0] for x in form.items() if x[0].endswith('_attribute_key')]
@@ -99,28 +95,27 @@ def add_word_to_db(form):
     attr_names = [x[:-suffix_len] for x in attr_names]
     attr_ids = [x[1] for x in form.items() if x[0].endswith('_attribute_id')]
 
-    with conn.begin():  # this is how transactions are done with sqlalchemy
-        s = table_word.insert()
-        result = conn.execute(s, word=word, pos_id=pos_id)
+    s = table_word.insert()
+    result = conn.execute(s, word=word, pos_id=pos_id)
 
-        pklist = result.inserted_primary_key
-        word_id = pklist[0]
+    pklist = result.inserted_primary_key
+    word_id = pklist[0]
 
-        attrs_to_insert = []
-        for attr_name in attr_names:
-            attr_value = form.get('%s_attribute_key' % attr_name)
-            if attr_value:
-                d = {
-                    'attribute_id' : form.get('%s_attribute_id' % attr_name),
-                    'word_id' : word_id,
-                    'value' : attr_value
-                    }
-                attrs_to_insert.append(d)
+    attrs_to_insert = []
+    for attr_name in attr_names:
+        attr_value = form.get('%s_attribute_key' % attr_name)
+        if attr_value:
+            d = {
+                'attribute_id' : form.get('%s_attribute_id' % attr_name),
+                'word_id' : word_id,
+                'value' : attr_value
+                }
+            attrs_to_insert.append(d)
 
-        if len(attrs_to_insert) > 0:
-            result = conn.execute(table_word_attributes.insert(), attrs_to_insert)
+    if len(attrs_to_insert) > 0:
+        result = conn.execute(table_word_attributes.insert(), attrs_to_insert)
 
-        return word_id
+    return word_id
 
 @compiles(Insert)
 def append_string(insert, compiler, **kw):
@@ -133,7 +128,7 @@ def append_string(insert, compiler, **kw):
         return s + " " + insert.kwargs['append_string']
     return s
 
-def update_word(form):
+def update_word(conn, form):
 
     # form has the current values plus whatever the user did to them
 
@@ -156,10 +151,8 @@ def update_word(form):
     update word_attributes set value = newvalue where word_id = x and attribute_id = y
     '''
     
-    with conn.begin():
-
-        s = table_word_attributes.insert(append_string = 'ON DUPLICATE KEY UPDATE value=VALUES(value)')
-        conn.execute(s, update_values)
+    s = table_word_attributes.insert(append_string = 'ON DUPLICATE KEY UPDATE value=VALUES(value)')
+    conn.execute(s, update_values)
 
 def get_pos_rows(conn):
 
@@ -193,59 +186,55 @@ and pos.id = %s
     final_result['attr_list'] = attr_list
     return final_result
 
-@app.route('/addword', methods=['GET', 'POST'])
-def addword():
-    global conn
+@app.route('/addword/<pos_id>', methods=['GET', 'POST'])
+def addword(pos_id):
 
-    pos_id = None
-    word_info = None
-    template_to_render = 'addword.html'
-    if request.method == 'POST':
-        pos_id = request.form['pos_id']
-        word = request.form.get('word', None)
-        if not word:
-            flash('Erk.  Type a word.')
-        else:
-            word_info = word_exists(word, pos_id)
-            if word_info:
-                # check that the word isn't already there
-                flash('"%s" is already there' % word)
-                template_to_render = 'updateword.html'
+    with conn.begin():
+        word_info = None
+        template_to_render = 'addword.html'
+        if request.method == 'POST':
+            word = request.form.get('word', None)
+            if not word:
+                flash('Erk.  Type a word.')
             else:
-                word_id = add_word_to_db(request.form)
-                flash('"%s" added to dictionary, id = %s' % (word, str(word_id)))
-
-    else:
-        pos_id = request.args.get('pos_id')
-
-    # this fetches the attribute names that will be displayed on the add word form.
-    attribute_info = get_pos_attributes(conn, pos_id)
-
-    pos_rows = get_pos_rows(conn)
-
-    return my_render_template(template_to_render,
-                              attribute_info=attribute_info,
-                              pos_id=pos_id,
-                              word_info=word_info,
-                              pos_rows=pos_rows)
+                word_info = word_exists(conn, word, pos_id)
+                if word_info:
+                    # check that the word isn't already there
+                    flash('"%s" is already there' % word)
+                    template_to_render = 'updateword.html'
+                else:
+                    word_id = add_word_to_db(conn, request.form, pos_id)
+                    flash('"%s" added to dictionary, id = %s' % (word, str(word_id)))
+    
+        # this fetches the attribute names that will be displayed on the add word form.
+        attribute_info = get_pos_attributes(conn, pos_id)
+    
+        pos_rows = get_pos_rows(conn)
+    
+        return my_render_template(template_to_render,
+                                  attribute_info=attribute_info,
+                                  pos_id=pos_id,
+                                  word_info=word_info,
+                                  pos_rows=pos_rows)
 
 @app.route('/updateword', methods=['POST'])
 def updateword():
 
-    update_word(request.form)
-
-    pos_id = request.form.get('pos_id')
-
-    # this fetches the attribute names that will be displayed on the add word form.
-    attribute_info = get_pos_attributes(conn, pos_id)
-
-    pos_rows = get_pos_rows(conn)
-    statusmessage = '"%s" updated' % request.form.get('word')
-    return my_render_template('addword.html',
-                              attribute_info=attribute_info,
-                              statusmessage=statusmessage,
-                              pos_id=pos_id,
-                              pos_rows=pos_rows)
+    with conn.begin():
+        update_word(conn, request.form)
+    
+        pos_id = request.form.get('pos_id')
+    
+        # this fetches the attribute names that will be displayed on the add word form.
+        attribute_info = get_pos_attributes(conn, pos_id)
+    
+        pos_rows = get_pos_rows(conn)
+        statusmessage = '"%s" updated' % request.form.get('word')
+        return my_render_template('addword.html',
+                                  attribute_info=attribute_info,
+                                  statusmessage=statusmessage,
+                                  pos_id=pos_id,
+                                  pos_rows=pos_rows)
 
 @app.route('/config')
 def showconfig():
@@ -314,13 +303,11 @@ limit 1
 
 def select_next_word(quiz_id):
 
-    with conn.begin():
+    # select the next word.  this query guarantees that
+    # the selected word has defined values for all the attributes
+    # tested by the quiz.
 
-        # select the next word.  this query guarantees that
-        # the selected word has defined values for all the attributes
-        # tested by the quiz.
-
-        sql = '''
+    sql = '''
 select word_id from quiz_word_attr_count qwac
 inner join quiz_attr_count qac on qwac.quiz_id = qac.quiz_id
 and qwac.pos_id = qac.pos_id
@@ -329,13 +316,13 @@ and qwac.attrcount = qac.attrcount
 where qac.quiz_id = %s
 ''' % (quiz_id)
 
-        candidate_word_ids = []
-        result = conn.execute(sql)
+    candidate_word_ids = []
+    result = conn.execute(sql)
 
-        for row in result:
-            candidate_word_ids.append(row['word_id'])
+    for row in result:
+        candidate_word_ids.append(row['word_id'])
 
-        return random.choice(candidate_word_ids)
+    return random.choice(candidate_word_ids)
 
 def get_quiz_question_data(conn, quiz_id):
 
