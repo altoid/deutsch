@@ -1,7 +1,6 @@
 <html>
   <head>
-    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}"/>
-    <link rel='stylesheet' href="{{ url_for('static', filename='style.css') }}"/>
+    {% include 'headlinks.inc' %}
     <title> {{ config.APP_NAME }}</title>
   </head>
   <body>

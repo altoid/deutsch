@@ -229,10 +229,9 @@ def updateword():
         attribute_info = get_pos_attributes(conn, pos_id)
     
         pos_rows = get_pos_rows(conn)
-        statusmessage = '"%s" updated' % request.form.get('word')
+        flash('"%s" updated' % request.form.get('word'))
         return my_render_template('addword.html',
                                   attribute_info=attribute_info,
-                                  statusmessage=statusmessage,
                                   pos_id=pos_id,
                                   pos_rows=pos_rows)
 
@@ -485,7 +484,6 @@ select a.id, a.attrkey, wa.value
                 }
 
                 correct_scores.append(d)
-                correct_update_clause = 'on duplicate key update presentation_count = presentation_count + 1, correct_count = correct_count + 1'
             else:
                 d = {
                     'quiz_id' : quiz_id,
@@ -495,13 +493,15 @@ select a.id, a.attrkey, wa.value
                 }
 
                 incorrect_scores.append(d)
-                incorrect_update_clause = 'on duplicate key update presentation_count = presentation_count + 1'
+
 
         if len(correct_scores) > 0:
+            correct_update_clause = 'on duplicate key update presentation_count = presentation_count + 1, correct_count = correct_count + 1'
             s = table_quiz_score.insert(append_string=correct_update_clause)
             conn.execute(s, correct_scores)
                 
         if len(incorrect_scores) > 0:
+            incorrect_update_clause = 'on duplicate key update presentation_count = presentation_count + 1'
             s = table_quiz_score.insert(append_string=incorrect_update_clause)
             conn.execute(s, incorrect_scores)
                 

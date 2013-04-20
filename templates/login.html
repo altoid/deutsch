@@ -1,16 +1,21 @@
 <html>
+  <head>
+    {% include 'headlinks.inc' %}
+    <title> {{ config.APP_NAME }}</title>
+  </head>
   <body>
     <form action="" method="post">
-      <div>
-	<label for="username">Username:</label>
-	<input type="text" id="username" name="username"/>
-	<br>
-	<label for="password">Password:</label>
-	<input type="password" id="password" name="password"/>
-      </div>
-      <div class="button">
-	<button type="submit">Go</button>
-      </div>
+      <table>
+	<tr>
+	  <td><label for="username">Username:</label></td>
+	  <td><input type="text" id="username" name="username"/></td>
+	</tr>
+	<tr>
+	  <td><label for="password">Password:</label></td>
+	  <td><input type="password" id="password" name="password"/></td>
+	</tr>
+      </table>
+      <button type="submit">Go</button>
     </form>
   </body>
 </html>
