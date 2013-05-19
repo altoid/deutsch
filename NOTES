@@ -1,6 +1,7 @@
 to get the db connector working:
 
 - add /usr/local/mysql/bin to path, to get mysql_config
+- pip install flask
 - pip install sqlalchemy
 - pip install MySQL-python
 - ln /usr/local/mysql/lib/libmysqlclient.8.dylib to /usr/lib (use sudo)
